@@ -1,15 +1,20 @@
 from test_runner import TestRunner
-from data_logger import DataLogger
-from mqtt_publisher import MqttPublisher
+from data_logger import DataLogger, CSVStorage
+# from mqtt_publisher import MqttPublisher
 from motor_controller import MotorController
-from sensor_reader import SensorReader
+from sensor_reader import TempReader
+
+DATA_FILES_PATH = "RTD/data/"
+
 
 if __name__ == "__main__":    
 
-    mqtt_publisher = MqttPublisher()
-    data_logger = DataLogger(DATA_FILES_PATH, mqtt_publisher)
-    motor_controller = MotorController()
-    sensor_reader = SensorReader()
+    # mqtt_publisher = MqttPublisher()
+    csv_storage = CSVStorage(DATA_FILES_PATH)
+    data_logger = DataLogger(csv_storage) #, mqtt_publisher)
 
-    test_runner = TestRunner(data_logger, mqtt_publisher, motor_controller, sensor_reader)
+    motor_controller = MotorController()
+    temp_reader = TempReader()
+
+    test_runner = TestRunner(data_logger, motor_controller, temp_reader)
     test_runner.run_test()
