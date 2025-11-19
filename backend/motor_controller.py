@@ -28,8 +28,16 @@ class MotorController:
     def get_speed(self):
         pass
 
-    def trigger_motors(self):
+    def run_motor_map(self):
+        # this function will execute predefined motor map
         self._state = MotorState.RUNNING
+    
+    def running(self):
+        return self._state == MotorState.RUNNING
+    
+    def reset(self):
+        self.disable_motors()
+        pass
 
     def disable_motors(self):
         self._state = MotorState.IDLE

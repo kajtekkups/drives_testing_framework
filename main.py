@@ -1,20 +1,21 @@
-from test_runner import TestRunner
-from data_logger import DataLogger, CSVStorage
-# from mqtt_publisher import MqttPublisher
-from motor_controller import MotorController
-from sensor_reader import TempReader
+import dash
+from dash import dcc, html
+from dash.dependencies import Input, Output
+import random
 
-DATA_FILES_PATH = "RTD/data/"
+import threading
+from windows_stubs.backend import test_runner
+from frontend.dash_layout import app_layout
+from frontend.dash_callbacks import register_callbacks
 
+app = dash.Dash(__name__, suppress_callback_exceptions=True)
+app.layout = app_layout
 
-if __name__ == "__main__":    
+# Register callbacks
+register_callbacks(app)
 
-    # mqtt_publisher = MqttPublisher()
-    csv_storage = CSVStorage(DATA_FILES_PATH)
-    data_logger = DataLogger(csv_storage) #, mqtt_publisher)
+if __name__ == '__main__':
+    thread = threading.Thread(target=test_runner.run_test_loop, daemon=True)
+    thread.start()
 
-    motor_controller = MotorController()
-    temp_reader = TempReader()
-
-    test_runner = TestRunner(data_logger, motor_controller, temp_reader)
-    test_runner.run_test()
+    app.run(debug=True)
