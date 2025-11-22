@@ -11,8 +11,9 @@ class TestRunner:
         self.data_logger = data_logger
         self.motor_controller = motor_controller
         self.sensor_reader = sensor_reader
-        self.meassurements = []
-
+        self.meassurements = self.sensor_reader._sensors
+        self.meassure_time = 0
+        
         self.thread = None
         self.test_active = False
         self.lock = threading.Lock()
@@ -21,6 +22,8 @@ class TestRunner:
         with self.lock:
             return self.meassurements.copy()  # return a copy to avoid race conditions
     
+    def get_time(self):
+        return self.meassure_time
 
     def monitor_meassurements(self):
         # TODO: if temp is not in proper range, disable testing
@@ -39,7 +42,7 @@ class TestRunner:
         try:
             while self.motor_controller.running():
                 self.motor_controller.run_motor_map()
-                meassurements = self.sensor_reader.read_all()
+                meassurements, self.meassure_time = self.sensor_reader.read_all()
                 
                 with self.lock:
                     self.meassurements = meassurements.copy() #TODO: make sure meassurements is doesn't contain nested objects (this is shallow copy)

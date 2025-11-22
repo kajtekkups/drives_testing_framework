@@ -1,7 +1,7 @@
 from dash import Input, Output, html, dcc
 import random
 
-from windows_stubs.backend import test_runner
+from backend.backend import backend_runner
 
 # Store live data
 plot_data = {f"plot{i}": {"x": [], "y": []} for i in range(1, 9)}
@@ -19,7 +19,7 @@ def register_callbacks(app):
                 html.H3("Live Plots 1–4"),
                 html.Div([
                     html.Div(dcc.Graph(id=f'plot{i}'), style={'width': '25%', 'display': 'inline-block'})
-                    for i in range(1, 5)
+                    for i in range(5, 9)
                 ])
             ])
 
@@ -28,7 +28,7 @@ def register_callbacks(app):
                 html.H3("Live Plots 5–8"),
                 html.Div([
                     html.Div(dcc.Graph(id=f'plot{i}'), style={'width': '25%', 'display': 'inline-block'})
-                    for i in range(5, 9)
+                    for i in range(1, 5)                    
                 ])
             ])
 
@@ -40,12 +40,12 @@ def register_callbacks(app):
 
     # ➤ Update Plots 1–4
     @app.callback(
-        [Output(f'plot{i}', 'figure') for i in range(1, 3)],
+        [Output(f'plot{i}', 'figure') for i in range(5, 9)],
         Input('interval', 'n_intervals')
     )
     def update_tab2(n):
         figures = []
-        for i in range(1, 3):
+        for i in range(5, 9):
             plot_data[f'plot{i}']['x'].append(n)
             plot_data[f'plot{i}']['y'].append(random.randint(0, 10))
             figures.append({
@@ -61,20 +61,23 @@ def register_callbacks(app):
 
 
     @app.callback(
-        [Output(f'plot{i}', 'figure') for i in range(5, 9)],
+        [Output(f'plot{i}', 'figure') for i in range(1, 5)],
         Input('interval', 'n_intervals')
     )
     def update_tab3(n):
         figures = []
-        measurements = test_runner.get_measurements()
-        time = test_runner.get_time()
-        keys = list(measurements.keys())  # T1–T10
+        measurements = backend_runner.get_measurements()
+        time = backend_runner.get_time()
+        keys = list(measurements.keys())
 
+        print(measurements)
+        print(time)
         # Plot T5–T8 → plot5–plot8
-        for plot_index, key_index in enumerate(range(4, 8), start=5):
+        for plot_index, key_index in enumerate(range(4), start=1):
             key = keys[key_index]
-            plot_data[f'plot{plot_index}']['x'] = time
-            plot_data[f'plot{plot_index}']['y'] = measurements[key]
+            
+            plot_data[f'plot{plot_index}']['x'].append(time)
+            plot_data[f'plot{plot_index}']['y'].append(measurements[key])
 
             figures.append({
                 'data': [{

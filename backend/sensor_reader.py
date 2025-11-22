@@ -1,16 +1,17 @@
 #TODO: add sensor check during class initialization (maybe during meassuring too?)
 
-from enum import Enum
 import librtd
+import time
+from enum import Enum
 
 class SensorID(Enum):
     SENSOR_1 = 1
     SENSOR_2 = 2
     SENSOR_3 = 3
-    # SENSOR_4 = 4
-    # SENSOR_5 = 5
-    # SENSOR_6 = 6
-    # SENSOR_7 = 7
+    SENSOR_4 = 4
+    SENSOR_5 = 5
+    SENSOR_6 = 6
+    SENSOR_7 = 7
     # SENSOR_8 = 8
 
 class TempReader:
@@ -21,7 +22,7 @@ class TempReader:
     def read_all(self):
         for sensor in self._sensors:
             self._sensors[sensor] = self._read_sensor(sensor.value)
-        return self._sensors
+        return self._sensors, time.time()
         
     def _read_sensor(self, sensor):                       
         return librtd.get(self._board_id, sensor)
