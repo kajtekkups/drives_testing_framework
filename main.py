@@ -1,7 +1,4 @@
 import dash
-from dash import dcc, html
-from dash.dependencies import Input, Output
-import random
 
 import threading
 from backend.backend import backend_runner
@@ -19,5 +16,3 @@ if __name__ == '__main__':
     thread.start()
 
     app.run(host="0.0.0.0", port=8050, debug=True)
-
-    # app.run(debug=True)

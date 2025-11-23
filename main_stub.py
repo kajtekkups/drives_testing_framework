@@ -1,10 +1,7 @@
 import dash
-from dash import dcc, html
-from dash.dependencies import Input, Output
-import random
 
 import threading
-from windows_stubs.backend import test_runner
+from windows_stubs.backend import backend_runner
 from frontend.dash_layout import app_layout
 from frontend.dash_callbacks import register_callbacks
 
@@ -15,9 +12,7 @@ app.layout = app_layout
 register_callbacks(app)
 
 if __name__ == '__main__':
-    thread = threading.Thread(target=test_runner.run_test_loop, daemon=True)
+    thread = threading.Thread(target=backend_runner.run_test_loop, daemon=True)
     thread.start()
 
-    app.run(host="0.0.0.0", port=8050, debug=True)
-
-    # app.run(debug=True)
+    app.run(debug=True, port=8051)

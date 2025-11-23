@@ -14,5 +14,3 @@ motor_controller = MotorController()
 temp_reader = TempReader()
 
 backend_runner = TestRunner(data_logger, motor_controller, temp_reader)
-
-all_measurements=[]

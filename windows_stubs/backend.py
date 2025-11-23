@@ -1,59 +1,42 @@
 import numpy as np
+from enum import Enum
 import time
+
+class SensorID(Enum):
+    SENSOR_1 = 1
+    SENSOR_2 = 2
+    SENSOR_3 = 3
+    SENSOR_4 = 4
+    SENSOR_5 = 5
+    SENSOR_6 = 6
+    SENSOR_7 = 7
+    # SENSOR_8 = 8
 
 class TestRunner:
     def __init__(self):
-        self.meassurements = {"T1": 1,
-                              "T2": 2,
-                              "T3": 3,
-                              "T4": 4,
-                              "T5": 5,
-                              "T6": 6,
-                              "T7": 7,
-                              "T8": 8,
-                              "T9": 8,
-                              "T10": 8}
-        self.state = "RUNNING"
-        self.time = []
+        self.time = 0
         self.counter = 0
-        self.last_20_meassurements = {
-                              "T1": [],
-                              "T2": [],
-                              "T3": [],
-                              "T4": [],
-                              "T5": [],
-                              "T6": [],
-                              "T7": [],
-                              "T8": [],
-                              "T9": [],
-                              "T10": []}
-        
-        self.MAX_DATA_LENGTH = 10
+        self.last_20_meassurements = {sensor: 0 for sensor in SensorID}
     
     def run_test_loop(self):
         while True:
-            test_runner.run_test() 
+            self.run_test() 
             time.sleep(1)  
 
     def run_test(self):
-        for key in self.last_20_meassurements:
-            if len(self.last_20_meassurements[key]) == self.MAX_DATA_LENGTH:
-                self.last_20_meassurements[key].pop(0)                
-            self.last_20_meassurements[key].append(np.random.randint(1, 100))
+        for key in self.last_20_meassurements:              
+            self.last_20_meassurements[key] = np.random.randint(1, 100)
 
-        if len(self.time) == self.MAX_DATA_LENGTH:
-            self.time.pop(0)
-        self.time.append(self.counter)
+        self.time = self.counter
         self.counter += 1
     
     def test_running(self):
         return True
     
     def get_time(self):
-        return self.time.copy()
+        return self.time
 
     def get_measurements(self):
         return self.last_20_meassurements.copy()
     
-test_runner = TestRunner()
-all_measurements=[]
+backend_runner = TestRunner()
