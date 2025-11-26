@@ -4,10 +4,10 @@ import numpy as np
 import sys
 
 if sys.platform.startswith('win'):
-    from windows_stubs.backend import backend_runner
+    from windows_stubs.backend import backend_engine
     from windows_stubs.backend import SensorID
 elif sys.platform.startswith('linux'):
-    from backend.backend import backend_runner
+    from backend.backend import backend_engine
     from backend.backend import SensorID
 else:
     print("Unsupported OS")
@@ -130,8 +130,8 @@ def register_callbacks(app):
     )
     def update_tab3(n):
         figures = []
-        measurements = backend_runner.get_measurements()
-        time = backend_runner.get_time()
+        measurements = backend_engine.get_measurements()
+        time = backend_engine.get_time()
         keys = list(measurements.keys())
 
         print(measurements)

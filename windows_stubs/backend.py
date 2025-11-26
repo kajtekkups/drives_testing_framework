@@ -12,7 +12,7 @@ class SensorID(Enum):
     SENSOR_7 = 7
     # SENSOR_8 = 8
 
-class TestRunner:
+class SystemEngineStub:
     def __init__(self):
         self.time = 0
         self.counter = 0
@@ -39,4 +39,4 @@ class TestRunner:
     def get_measurements(self):
         return self.last_20_meassurements.copy()
     
-backend_runner = TestRunner()
+backend_engine = SystemEngineStub()

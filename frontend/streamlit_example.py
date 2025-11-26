@@ -3,7 +3,7 @@ import time
 import pandas as pd
 import numpy as np
 from threading import Thread
-from windows_stubs.backend import test_runner, all_measurements
+from windows_stubs.backend import system_engine, all_measurements
 from frontend.frontend import tab_1, tab_2, tab_3
 
 from streamlit_autorefresh import st_autorefresh
@@ -19,9 +19,9 @@ if "thread_started" not in st.session_state:
 # Background Data Function
 # ----------------------------
 def background_function():
-    test_runner.run_test()
-    while test_runner.test_running():
-        measurements = test_runner.get_measurements()
+    system_engine.run_test()
+    while system_engine.test_running():
+        measurements = system_engine.get_measurements()
 
         # Store new measurement
         all_measurements.append(measurements)
@@ -38,14 +38,14 @@ st.write("Data updates automatically every time Streamlit reruns.")
 # Start background thread
 if st.button("Start test"):
     if not st.session_state.thread_started:
-        test_runner.state = "RUNNING"
+        system_engine.state = "RUNNING"
         thread = Thread(target=background_function, daemon=True)
         thread.start()
 
         st.session_state.thread_started = True
         st.success("Background function started!")
     else:
-        test_runner.state = "STOPED"
+        system_engine.state = "STOPED"
         st.session_state.thread_started = False
         st.info("Background function stoped!")
 

@@ -6,7 +6,7 @@ from backend.motor_controller import MotorState
 
 MEASUREMENT_TIME = 1  # seconds
 
-class TestRunner:
+class SystemEngine:
     def __init__(self, data_logger, motor_controller, sensor_reader):
         self.data_logger = data_logger
         self.motor_controller = motor_controller
