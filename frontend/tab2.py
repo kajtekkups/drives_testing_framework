@@ -1,6 +1,6 @@
 import plotly.express as px
 import pandas as pd
-from dash import html, dcc
+from dash import Input, Output, html, dcc, State
 
 # Example plot
 example_data = pd.DataFrame({
@@ -28,12 +28,25 @@ def generate_tab2():
             # Right side: inputs and button
             html.Div([
                 dcc.Input(
-                    id='Motor_velocity_input',
+                    id='motor_velocity_input',
                     type='number',
                     placeholder='Enter motor velocity (0-3000 rpm)'
                 ),
                 html.Button("Submit", id="motor_velocity_button", n_clicks=0),
-                html.Div(id="Motor_velocity_input")
+                html.Div(id="motor_velocity_output")
             ], style={"flex": "30%", "padding": "10px"})
         ], style={"display": "flex"})  # Flex container
     ])
+
+def callback_tab2(app):
+    @app.callback(
+        Output("motor_velocity_output", "children"),
+        Input("motor_velocity_button", "n_clicks"),
+        State("motor_velocity_input", "value")
+    )
+    def update_output(n_clicks, input_value):
+        if n_clicks > 0:
+            # Store the value in a variable (here just returning for display)
+            stored_value = input_value
+            return f"You entered: {stored_value}"
+        return "No input yet."
