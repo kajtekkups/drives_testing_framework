@@ -12,7 +12,7 @@ app.layout = app_layout
 register_callbacks(app)
 
 if __name__ == '__main__':
-    thread = threading.Thread(target=backend_engine.run_test_loop, daemon=True)
+    thread = threading.Thread(target=backend_engine.test_execution, daemon=True)
     thread.start()
 
     app.run(debug=True, port=8051)

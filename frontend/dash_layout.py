@@ -7,5 +7,5 @@ app_layout  = html.Div([
         dcc.Tab(label="Tab 3 (Plots 5–8)", value="tab3"),
     ]),
     html.Div(id="tab-content"),
-    dcc.Interval(id='interval', interval=1000, n_intervals=0)
+    dcc.Interval(id='interval', interval=100, n_intervals=0)
 ])

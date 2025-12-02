@@ -3,6 +3,7 @@
 # 3. trigger motors, set torque/speed
 # 4. set specified test map
 from enum import Enum, auto
+import numpy as np
 
 class MotorState(Enum):
     IDLE = auto()
@@ -26,7 +27,7 @@ class MotorController:
         pass
 
     def get_speed(self):
-        pass
+        return np.random.randint(1, 100)
 
     def run_motor_map(self):
         # this function will execute predefined motor map

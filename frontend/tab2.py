@@ -1,3 +1,12 @@
+import sys
+
+if sys.platform.startswith('win'):
+    from windows_stubs.backend import backend_engine
+elif sys.platform.startswith('linux'):
+    from backend.backend import backend_engine
+else:
+    print("Unsupported OS")
+
 import plotly.express as px
 import pandas as pd
 from dash import Input, Output, html, dcc, State
@@ -22,7 +31,7 @@ def generate_tab2():
         html.Div([
             # Left side: plot
             html.Div([
-                dcc.Graph(id='my-plot', figure=example_fig)
+                dcc.Graph(id='velocity_plot')
             ], style={"flex": "70%", "padding": "10px"}),
 
             # Right side: inputs and button
@@ -41,12 +50,28 @@ def generate_tab2():
 def callback_tab2(app):
     @app.callback(
         Output("motor_velocity_output", "children"),
+        Output("velocity_plot", "figure"),
         Input("motor_velocity_button", "n_clicks"),
+        Input('interval', 'n_intervals'),
         State("motor_velocity_input", "value")
     )
-    def update_output(n_clicks, input_value):
+    def update_output(n_clicks, n_intervals, input_value):     
+        rpm, meassurement_time = backend_engine.get_velocity_plot() 
+        vel_fig = {
+            'data': [{
+                'x': meassurement_time,
+                'y': rpm,
+                'type': 'scatter',
+                'mode': 'lines+markers'
+            }],
+            'layout': {
+                'title': 'Velocity [rpm]',
+                'width': 1100,
+                'height': 700}
+        }
+                      
         if n_clicks > 0:
             # Store the value in a variable (here just returning for display)
             stored_value = input_value
-            return f"You entered: {stored_value}"
-        return "No input yet."
+            return f"You entered: {stored_value}", vel_fig
+        return "No input yet.", vel_fig
