@@ -1,3 +1,4 @@
+from common.opcua_communication import OpcuaCommunication
 import numpy as np
 from enum import Enum
 import time
@@ -13,11 +14,12 @@ class SensorID(Enum):
     # SENSOR_8 = 8
 
 class SystemEngineStub:
-    def __init__(self):
+    def __init__(self, opcua_client):
         self.time = 0
         self.counter = 0
         self.last_20_meassurements = {sensor: 0 for sensor in SensorID}
-    
+        self.opcua_client = opcua_client
+
     def run_test_loop(self):
         while True:
             self.run_test() 
@@ -39,4 +41,6 @@ class SystemEngineStub:
     def get_measurements(self):
         return self.last_20_meassurements.copy()
     
-backend_engine = SystemEngineStub()
+url = "opc.tcp://127.0.0.1"
+opcua_client = OpcuaCommunication(url)
+backend_engine = SystemEngineStub(opcua_client)

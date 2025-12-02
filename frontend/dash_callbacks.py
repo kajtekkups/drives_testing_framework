@@ -1,6 +1,3 @@
-from dash import Input, Output, html, dcc, State
-import plotly.express as px
-import numpy as np
 import sys
 
 if sys.platform.startswith('win'):
@@ -12,21 +9,14 @@ elif sys.platform.startswith('linux'):
 else:
     print("Unsupported OS")
 
+from frontend.tab2 import generate_tab2
+from frontend.tab1 import generate_tab1, generate_plot
+
+from dash import Input, Output, html, dcc, State
 
 # Store live data
 TEMPERATURE_SENSORS_NUMBER = len(SensorID)
 plot_data = {f"plot{i}": {"x": [], "y": []} for i in range(TEMPERATURE_SENSORS_NUMBER)}
-
-
-def generate_plot():
-    X_AXIS_SIZE = 160
-    Y_AXIS_SIZE = 90
-    fig = px.imshow(np.zeros((Y_AXIS_SIZE, X_AXIS_SIZE, 4)),
-                    origin='lower')  # origin='upper' makes y=0 at top
-    fig.update_xaxes(showticklabels=True, range=[0, X_AXIS_SIZE], fixedrange=True, autorange=False)
-    fig.update_yaxes(showticklabels=True, range=[0, Y_AXIS_SIZE], fixedrange=False, autorange=False)
-    fig.update_layout(clickmode='event+select')  # enable click events
-    return fig
 
 def register_callbacks(app):
 
@@ -38,14 +28,11 @@ def register_callbacks(app):
         Input("tabs", "value")
     )
     def render_tab(tab):
-        if tab == "tab2":
-            return html.Div([
-                html.H3("Live Plots 1–4"),
-                html.Button("Click me", id="my-button", n_clicks=0),
-                html.Div(id="output"),
-            ],
-                style={"textAlign": "center"}
-            )
+        if tab == "tab1":
+            return generate_tab1()
+        
+        elif tab == "tab2":
+            return generate_tab2()
 
         elif tab == "tab3":
             return html.Div([
@@ -55,14 +42,6 @@ def register_callbacks(app):
                     for i in range(TEMPERATURE_SENSORS_NUMBER)                    
                 ])
             ])
-
-        fig = generate_plot()
-
-        return html.Div([
-            html.H3("Click anywhere on the blank canvas"),
-            dcc.Graph(id='clickable-canvas', figure=fig, style={'height': '800px'}),
-            dcc.Store(id='click-store', data={'x': [], 'y': []})
-        ])  
     
 
     ##############################################################
@@ -111,14 +90,19 @@ def register_callbacks(app):
         return fig, data
 
     ##############################################################
-    # ➤ Update button
+    # ➤ velocity control input
     ##############################################################
     @app.callback(
-        Output("output", "children"),
-        Input("my-button", "n_clicks")
+        Output("motor_velocity", "children"),
+        Input("motor_velocity_button", "n_clicks"),
+        State("Motor_velocity_input", "value")
     )
-    def display_clicks(n_clicks):
-        return f"Button clicked {n_clicks} times!"
+    def update_output(n_clicks, input_value):
+        if n_clicks > 0:
+            # Store the value in a variable (here just returning for display)
+            stored_value = input_value
+            return f"You entered: {stored_value}"
+        return "No input yet."
 
 
     ##############################################################
