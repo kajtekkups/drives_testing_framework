@@ -14,6 +14,7 @@ class MotorState(Enum):
 class MotorController:
     def __init__(self):
         self._state = MotorState.IDLE
+        self._velocity_setpoint = 0 
 
 # --- Public API ---
     @property
@@ -26,8 +27,12 @@ class MotorController:
     def get_torque(self):
         pass
 
+    def set_speed(self, velocity):
+        #TODO: add mutex to prevent _
+        self._velocity_setpoint = velocity
+      
     def get_speed(self):
-        return np.random.randint(1, 100)
+        return self._velocity_setpoint #np.random.randint(1, 100)
 
     def run_motor_map(self):
         # this function will execute predefined motor map

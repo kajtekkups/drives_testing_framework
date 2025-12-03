@@ -9,7 +9,7 @@ else:
 
 import plotly.express as px
 import pandas as pd
-from dash import Input, Output, html, dcc, State
+from dash import Input, Output, html, dcc, State, ctx
 
 # Example plot
 example_data = pd.DataFrame({
@@ -42,14 +42,14 @@ def generate_tab2():
                     placeholder='Enter motor velocity (0-3000 rpm)'
                 ),
                 html.Button("Submit", id="motor_velocity_button", n_clicks=0),
-                html.Div(id="motor_velocity_output")
+                # html.Div(id="motor_velocity_output")
             ], style={"flex": "30%", "padding": "10px"})
         ], style={"display": "flex"})  # Flex container
     ])
 
 def callback_tab2(app):
     @app.callback(
-        Output("motor_velocity_output", "children"),
+        # Output("motor_velocity_output", "children"),
         Output("velocity_plot", "figure"),
         Input("motor_velocity_button", "n_clicks"),
         Input('interval', 'n_intervals'),
@@ -69,9 +69,12 @@ def callback_tab2(app):
                 'width': 1100,
                 'height': 700}
         }
-                      
-        if n_clicks > 0:
-            # Store the value in a variable (here just returning for display)
-            stored_value = input_value
-            return f"You entered: {stored_value}", vel_fig
-        return "No input yet.", vel_fig
+        if ctx.triggered_id == "motor_velocity_button":
+            backend_engine.set_velocity(input_value) 
+
+        return vel_fig
+        #TODO: do wywalenia
+        # if n_clicks > 0:
+        #     stored_value = input_value
+        #     return f"You entered: {stored_value}", vel_fig
+        # return "No input yet.", vel_fig
