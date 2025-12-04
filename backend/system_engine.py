@@ -18,6 +18,8 @@ class SystemEngine:
         self.velocity_setpoint = 0
         self.meassurement_time = 0
         
+        self.test_map = {'timestamp': [], 'rpm': []}
+
         self.velocity_plot = {"meassurement_time": [], "rpm": []}
         
         self.thread = None
@@ -28,6 +30,10 @@ class SystemEngine:
         with self.lock:
             return self.meassurements.copy()  # return a copy to avoid race conditions
     
+    def set_motor_test_map(self, timestamps:list[int], rpms:list[int]):
+        self.test_map['timestamp'] = timestamps #add mutex
+        self.test_map['rpm'] = rpms
+
     def set_velocity(self, velocity):
         #add mutex
         self.velocity_setpoint = velocity
@@ -55,34 +61,39 @@ class SystemEngine:
 
     def test_execution(self):  
         self.test_active = True 
-        self.motor_controller.run_motor_map()
-        try:
-            while self.motor_controller.running():
-                #TODO: add option for sweaching motor control (setpoint/mottor map)
-                self.motor_controller.run_motor_map()
-                self.motor_controller.set_speed(self.velocity_setpoint)
+        while True:
+            if self.motor_controller.running():
+                try:
+                    while self.motor_controller.running():
+                        #TODO: add option for sweaching motor control (setpoint/mottor map)
+                        self.motor_controller.run_motor_map()
+                        print(self.test_map)                
+                        self.motor_controller.set_speed(self.velocity_setpoint)
 
-                meassurements, self.meassurement_time = self.sensor_reader.read_all()
+                        meassurements, self.meassurement_time = self.sensor_reader.read_all()
 
-                with self.lock:
-                    self.meassurements = meassurements.copy() #TODO: make sure meassurements is doesn't contain nested objects (this is shallow copy)
-                    motor_velocity = self.motor_controller.get_speed() #TODO: make sure it doesnt block controller (mutex)
+                        with self.lock:
+                            self.meassurements = meassurements.copy() #TODO: make sure meassurements is doesn't contain nested objects (this is shallow copy)
+                            motor_velocity = self.motor_controller.get_speed() #TODO: make sure it doesnt block controller (mutex)
 
-                    self.velocity_plot["rpm"].append(motor_velocity) #TODO: save time and velocity to one datastructure
-                    self.velocity_plot["meassurement_time"].append(self.meassurement_time)
-                    if len(self.velocity_plot["meassurement_time"]) > MAX_PLOT_MEASURMENTS:
-                        self.velocity_plot["rpm"].pop(0)
-                        self.velocity_plot["meassurement_time"].pop(0)
+                            self.velocity_plot["rpm"].append(motor_velocity) #TODO: save time and velocity to one datastructure
+                            self.velocity_plot["meassurement_time"].append(self.meassurement_time)
+                            if len(self.velocity_plot["meassurement_time"]) > MAX_PLOT_MEASURMENTS:
+                                self.velocity_plot["rpm"].pop(0)
+                                self.velocity_plot["meassurement_time"].pop(0)
 
-                self.data_logger.log(meassurements)
-                
-                if self.monitor_meassurements():
+                        self.data_logger.log(meassurements)
+                        
+                        if self.monitor_meassurements():
+                            self.motor_controller.reset()
+                            #TODO: disable testing
+                            break
+
+                        time.sleep(MEASUREMENT_TIME)
+                finally:
+                    # ensure motors are disabled at the end of the test
+                    self.test_active = False
                     self.motor_controller.reset()
-                    #TODO: disable testing
-                    break
-
-                time.sleep(MEASUREMENT_TIME)
-        finally:
-            # ensure motors are disabled at the end of the test
-            self.test_active = False
-            self.motor_controller.reset()
+                    print("MOTOR ERROR")
+            
+            time.sleep(MEASUREMENT_TIME) #TODO: refactor this function so this thread doesnt block the whole program

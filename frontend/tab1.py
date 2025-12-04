@@ -76,5 +76,6 @@ def callback_tab1(app):
             showlegend=False
         )
         
+        backend_engine.set_motor_test_map(data['x'], data['y']) #TODO: add button and if statement to send map
         print(f"You clicked at x={x}, y={y}")
         return data, input_figure

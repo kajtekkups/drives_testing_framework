@@ -17,7 +17,7 @@ class MotorController:
         self._velocity_setpoint = 0 
 
 # --- Public API ---
-    @property
+    # @property
     def get_state(self):
         return self._state
 
@@ -29,6 +29,7 @@ class MotorController:
 
     def set_speed(self, velocity):
         #TODO: add mutex to prevent _
+        #TODO: add ramp so the change of a setpoint isn't too big
         self._velocity_setpoint = velocity
       
     def get_speed(self):
@@ -43,7 +44,7 @@ class MotorController:
     
     def reset(self):
         self.disable_motors()
-        pass
+        #TODO: more functionality
 
     def disable_motors(self):
         self._state = MotorState.IDLE

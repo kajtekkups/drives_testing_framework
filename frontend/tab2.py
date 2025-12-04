@@ -27,25 +27,38 @@ def generate_tab2():
     return html.Div([
         html.H3("Example input", style={"textAlign": "center"}),
 
-        # Flex container: plot on left, inputs on right
         html.Div([
+
             # Left side: plot
             html.Div([
                 dcc.Graph(id='velocity_plot')
             ], style={"flex": "70%", "padding": "10px"}),
 
-            # Right side: inputs and button
+            # Right side: stacked inputs + buttons
             html.Div([
                 dcc.Input(
                     id='motor_velocity_input',
                     type='number',
                     placeholder='Enter motor velocity (0-3000 rpm)'
                 ),
+
                 html.Button("Submit", id="motor_velocity_button", n_clicks=0),
-                # html.Div(id="motor_velocity_output")
-            ], style={"flex": "30%", "padding": "10px"})
+
+                html.Button("Run Motor", id="run_motor_button", n_clicks=0),
+
+                html.Button("Stop Motor", id="stop_motor_button", n_clicks=0)
+            ],
+            style={
+                "flex": "30%",
+                "padding": "10px",
+                "display": "flex",
+                "flexDirection": "column",   # STACK vertically
+                "gap": "10px"                # spacing between items
+            }),
+
         ], style={"display": "flex"})  # Flex container
     ])
+
 
 def callback_tab2(app):
     @app.callback(
@@ -53,9 +66,12 @@ def callback_tab2(app):
         Output("velocity_plot", "figure"),
         Input("motor_velocity_button", "n_clicks"),
         Input('interval', 'n_intervals'),
-        State("motor_velocity_input", "value")
+        State("motor_velocity_input", "value"),
+        Input("run_motor_button", "n_clicks"),
+        Input("stop_motor_button", "n_clicks")        
     )
-    def update_output(n_clicks, n_intervals, input_value):     
+    def update_output(n_clicks, n_intervals, input_value, run_clicks, stop_click):     
+        #TODO: refactor i trigger conditions for all 
         rpm, meassurement_time = backend_engine.get_velocity_plot() 
         vel_fig = {
             'data': [{
@@ -72,7 +88,14 @@ def callback_tab2(app):
         if ctx.triggered_id == "motor_velocity_button":
             backend_engine.set_velocity(input_value) 
 
+        if ctx.triggered_id == "run_motor_button":
+            backend_engine.motor_controller.run_motor_map()        
+        
+        if ctx.triggered_id == "stop_motor_button":
+            backend_engine.motor_controller.reset()
+        
         return vel_fig
+    
         #TODO: do wywalenia
         # if n_clicks > 0:
         #     stored_value = input_value
