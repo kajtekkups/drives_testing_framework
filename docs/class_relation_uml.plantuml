@@ -1,0 +1,651 @@
+
+@startuml
+' Classes and enums
+class SystemEngine {
+  - data_logger: DataLogger
+  - motor_controller: MotorController
+  - sensor_reader: TempReader
+  - meassurements
+  - velocity_setpoint
+@startuml
+' Classes and enums
+class SystemEngine {
+  - data_logger: DataLogger
+  - motor_controller: MotorController
+  - sensor_reader: TempReader
+  - meassurements
+  - velocity_setpoint
+  - meassurement_time
+  - test_map
+  - map_test_startup_time
+  - velocity_plot
+  - MAP_CONTROL
+  - SETPOINT_CONTROL
+  - control
+  - thread
+  - test_active
+  - lock
+  + initialize()
+  + set_control_type(control_type)
+  + get_measurements()
+  + get_motor_test_map()
+  + set_motor_test_map(timestamps, rpms)
+  + set_velocity(velocity)
+  + get_velocity_plot()
+  + get_time()
+  + get_map_size()
+  + monitor_meassurements()
+  + test_running()
+  + motor_data_processing(test_time)
+  + motor_map()
+  + test_execution()
+}
+
+class DataLogger {
+  - storage: StorageBackend
+  - publisher: MqttPublisher (optional)
+  + log(measurement: dict)
+}
+
+interface StorageBackend {
+  + save(data: dict)
+}
+
+class CSVStorage {
+  - filename
+  - fieldnames
+  + create_filename(file_dir: str)
+  + save(data: dict)
+}
+
+interface MqttPublisher {
+  + send(data: dict)
+}
+
+class MotorController {
+  - _state: MotorState
+  - _velocity_setpoint
+  - client
+  - SET_SPEED_NODE_ID
+  - ESTIMATED_SPEED_NODE_ID
+  + initialize()
+  + get_state()
+  + test_drives_connection()
+  + get_torque()
+  + get_stpoint()
+  + set_speed(velocity)
+  + get_speed()
+  + bracket_index(current_time, timestamps)
+  + run_motor_map(current_time, timestamp_map, rpm_map)
+  + trigger_motor()
+  + running()
+  + reset()
+  + disable_motors()
+  - _send_command(command)
+  - _init_connection()
+}
+
+enum MotorState {
+  IDLE
+  RUNNING
+  ERROR
+}
+
+class TempReader {
+  - _sensors
+  - _board_id
+  + read_all()
+  - _read_sensor(sensor)
+}
+
+enum SensorID
+
+class OpcuaCommunication {
+  - url
+  - client
+  - root
+  - connected
+  + browse_nodes_children(node)
+  + get_child(node, target_name)
+  + write_parameter_float(setpoint, node_id)
+  + read_parameter(node_id)
+  + connect()
+}
+
+' Relationships
+SystemEngine *-- MotorController : motor_controller
+SystemEngine *-- TempReader : sensor_reader
+SystemEngine *-- DataLogger : data_logger
+
+DataLogger o-- StorageBackend
+CSVStorage -|> StorageBackend
+DataLogger ..> MqttPublisher : optional
+
+MotorController ..> OpcuaCommunication : uses client (dependency)
+MotorController .. MotorState
+TempReader .. SensorID
+
+' Frontend and entry points (represented as classes for clarity)
+class DashFrontend {
+  + register_callbacks(app)
+}
+class MainEntrypoint {
+  + run()
+}
+
+DashFrontend ..> SystemEngine : reads measurements, set velocity, set_control_type
+MainEntrypoint ..> SystemEngine : starts test_execution thread
+
+@enduml
+@startuml
+' Classes and enums
+class SystemEngine {
+  - data_logger: DataLogger
+  - motor_controller: MotorController
+  - sensor_reader: TempReader
+  - meassurements
+  - velocity_setpoint
+  - meassurement_time
+  - test_map
+  - map_test_startup_time
+  - velocity_plot
+  - MAP_CONTROL
+  - SETPOINT_CONTROL
+  - control
+  - thread
+  - test_active
+  - lock
+  + initialize()
+  + set_control_type(control_type)
+  + get_measurements()
+  + get_motor_test_map()
+  + set_motor_test_map(timestamps, rpms)
+  + set_velocity(velocity)
+  + get_velocity_plot()
+  + get_time()
+  + get_map_size()
+  + monitor_meassurements()
+  + test_running()
+  + motor_data_processing(test_time)
+  + motor_map()
+  + test_execution()
+}
+
+class DataLogger {
+  - storage: StorageBackend
+  - publisher: MqttPublisher (optional)
+  + log(measurement: dict)
+}
+
+interface StorageBackend {
+  + save(data: dict)
+}
+
+class CSVStorage {
+  - filename
+  - fieldnames
+  + create_filename(file_dir: str)
+  + save(data: dict)
+}
+
+interface MqttPublisher {
+  + send(data: dict)
+}
+
+class MotorController {
+  - _state: MotorState
+  - _velocity_setpoint
+  - client
+  - SET_SPEED_NODE_ID
+  - ESTIMATED_SPEED_NODE_ID
+  + initialize()
+  + get_state()
+  + test_drives_connection()
+  + get_torque()
+  + get_stpoint()
+  + set_speed(velocity)
+  + get_speed()
+  + bracket_index(current_time, timestamps)
+  + run_motor_map(current_time, timestamp_map, rpm_map)
+  + trigger_motor()
+  + running()
+  + reset()
+  + disable_motors()
+  - _send_command(command)
+  - _init_connection()
+}
+
+enum MotorState {
+  IDLE
+  RUNNING
+  ERROR
+}
+
+class TempReader {
+  - _sensors
+  - _board_id
+  + read_all()
+  - _read_sensor(sensor)
+}
+
+enum SensorID
+
+class OpcuaCommunication {
+  - url
+  - client
+  - root
+  - connected
+  + browse_nodes_children(node)
+  + get_child(node, target_name)
+  + write_parameter_float(setpoint, node_id)
+  + read_parameter(node_id)
+  + connect()
+}
+
+' Relationships
+SystemEngine *-- MotorController : motor_controller
+SystemEngine *-- TempReader : sensor_reader
+SystemEngine *-- DataLogger : data_logger
+
+DataLogger o-- StorageBackend
+CSVStorage -|> StorageBackend
+DataLogger ..> MqttPublisher : optional
+
+MotorController ..> OpcuaCommunication : uses client (dependency)
+MotorController .. MotorState
+TempReader .. SensorID
+
+' Frontend and entry points (represented as classes for clarity)
+class DashFrontend {
+  + register_callbacks(app)
+}
+class MainEntrypoint {
+  + run()
+}
+
+DashFrontend ..> SystemEngine : reads measurements, set velocity, set_control_type
+MainEntrypoint ..> SystemEngine : starts test_execution thread
+
+@enduml
+@startuml
+' Classes and enums
+class SystemEngine {
+  - data_logger: DataLogger
+  - motor_controller: MotorController
+  - sensor_reader: TempReader
+  - meassurements
+  - velocity_setpoint
+  - meassurement_time
+  - test_map
+  - map_test_startup_time
+  - velocity_plot
+  - MAP_CONTROL
+  - SETPOINT_CONTROL
+  - control
+  - thread
+  - test_active
+  - lock
+  + initialize()
+  + set_control_type(control_type)
+  + get_measurements()
+  + get_motor_test_map()
+  + set_motor_test_map(timestamps, rpms)
+  + set_velocity(velocity)
+  + get_velocity_plot()
+  + get_time()
+  + get_map_size()
+  + monitor_meassurements()
+  + test_running()
+  + motor_data_processing(test_time)
+  + motor_map()
+  + test_execution()
+}
+
+class DataLogger {
+  - storage: StorageBackend
+  - publisher: MqttPublisher (optional)
+  + log(measurement: dict)
+}
+
+interface StorageBackend {
+  + save(data: dict)
+}
+
+class CSVStorage {
+  - filename
+  - fieldnames
+  + create_filename(file_dir: str)
+  + save(data: dict)
+}
+
+interface MqttPublisher {
+  + send(data: dict)
+}
+
+class MotorController {
+  - _state: MotorState
+  - _velocity_setpoint
+  - client
+  - SET_SPEED_NODE_ID
+  - ESTIMATED_SPEED_NODE_ID
+  + initialize()
+  + get_state()
+  + test_drives_connection()
+  + get_torque()
+  + get_stpoint()
+  + set_speed(velocity)
+  + get_speed()
+  + bracket_index(current_time, timestamps)
+  + run_motor_map(current_time, timestamp_map, rpm_map)
+  + trigger_motor()
+  + running()
+  + reset()
+  + disable_motors()
+  - _send_command(command)
+  - _init_connection()
+}
+
+enum MotorState {
+  IDLE
+  RUNNING
+  ERROR
+}
+
+class TempReader {
+  - _sensors
+  - _board_id
+  + read_all()
+  - _read_sensor(sensor)
+}
+
+enum SensorID
+
+class OpcuaCommunication {
+  - url
+  - client
+  - root
+  - connected
+  + browse_nodes_children(node)
+  + get_child(node, target_name)
+  + write_parameter_float(setpoint, node_id)
+  + read_parameter(node_id)
+  + connect()
+}
+
+' Relationships
+SystemEngine *-- MotorController : motor_controller
+SystemEngine *-- TempReader : sensor_reader
+SystemEngine *-- DataLogger : data_logger
+
+DataLogger o-- StorageBackend
+CSVStorage -|> StorageBackend
+DataLogger ..> MqttPublisher : optional
+
+MotorController ..> OpcuaCommunication : uses client (dependency)
+MotorController .. MotorState
+TempReader .. SensorID
+
+' Frontend and entry points (represented as classes for clarity)
+class DashFrontend {
+  + register_callbacks(app)
+}
+class MainEntrypoint {
+  + run()
+}
+
+DashFrontend ..> SystemEngine : reads measurements, set velocity, set_control_type
+MainEntrypoint ..> SystemEngine : starts test_execution thread
+
+@enduml
+@startuml
+' Classes and enums
+class SystemEngine {
+  - data_logger: DataLogger
+  - motor_controller: MotorController
+  - sensor_reader: TempReader
+  - meassurements
+  - velocity_setpoint
+  - meassurement_time
+  - test_map
+  - map_test_startup_time
+  - velocity_plot
+  - MAP_CONTROL
+  - SETPOINT_CONTROL
+  - control
+  - thread
+  - test_active
+  - lock
+  + initialize()
+  + set_control_type(control_type)
+  + get_measurements()
+  + get_motor_test_map()
+  + set_motor_test_map(timestamps, rpms)
+  + set_velocity(velocity)
+  + get_velocity_plot()
+  + get_time()
+  + get_map_size()
+  + monitor_meassurements()
+  + test_running()
+  + motor_data_processing(test_time)
+  + motor_map()
+  + test_execution()
+}
+
+class DataLogger {
+  - storage: StorageBackend
+  - publisher: MqttPublisher (optional)
+  + log(measurement: dict)
+}
+
+interface StorageBackend {
+  + save(data: dict)
+}
+
+class CSVStorage {
+  - filename
+  - fieldnames
+  + create_filename(file_dir: str)
+  + save(data: dict)
+}
+
+interface MqttPublisher {
+  + send(data: dict)
+}
+
+class MotorController {
+  - _state: MotorState
+  - _velocity_setpoint
+  - client
+  - SET_SPEED_NODE_ID
+  - ESTIMATED_SPEED_NODE_ID
+  + initialize()
+  + get_state()
+  + test_drives_connection()
+  + get_torque()
+  + get_stpoint()
+  + set_speed(velocity)
+  + get_speed()
+  + bracket_index(current_time, timestamps)
+  + run_motor_map(current_time, timestamp_map, rpm_map)
+  + trigger_motor()
+  + running()
+  + reset()
+  + disable_motors()
+  - _send_command(command)
+  - _init_connection()
+}
+
+enum MotorState {
+  IDLE
+  RUNNING
+  ERROR
+}
+
+class TempReader {
+  - _sensors
+  - _board_id
+  + read_all()
+  - _read_sensor(sensor)
+}
+
+enum SensorID
+
+class OpcuaCommunication {
+  - url
+  - client
+  - root
+  - connected
+  + browse_nodes_children(node)
+  + get_child(node, target_name)
+  + write_parameter_float(setpoint, node_id)
+  + read_parameter(node_id)
+  + connect()
+}
+
+' Relationships
+SystemEngine *-- MotorController : motor_controller
+SystemEngine *-- TempReader : sensor_reader
+SystemEngine *-- DataLogger : data_logger
+
+DataLogger o-- StorageBackend
+CSVStorage -|> StorageBackend
+DataLogger ..> MqttPublisher : optional
+
+MotorController ..> OpcuaCommunication : uses client (dependency)
+MotorController .. MotorState
+TempReader .. SensorID
+
+' Frontend and entry points (represented as classes for clarity)
+class DashFrontend {
+  + register_callbacks(app)
+}
+class MainEntrypoint {
+  + run()
+}
+
+DashFrontend ..> SystemEngine : reads measurements, set velocity, set_control_type
+MainEntrypoint ..> SystemEngine : starts test_execution thread
+
+@enduml
+  - meassurement_time
+  - test_map
+  - map_test_startup_time
+  - velocity_plot
+  - MAP_CONTROL
+  - SETPOINT_CONTROL
+  - control
+  - thread
+  - test_active
+  - lock
+  + initialize()
+  + set_control_type(control_type)
+  + get_measurements()
+  + get_motor_test_map()
+  + set_motor_test_map(timestamps, rpms)
+  + set_velocity(velocity)
+  + get_velocity_plot()
+  + get_time()
+  + get_map_size()
+  + monitor_meassurements()
+  + test_running()
+  + motor_data_processing(test_time)
+  + motor_map()
+  + test_execution()
+}
+
+class DataLogger {
+  - storage: StorageBackend
+  - publisher: MqttPublisher (optional)
+  + log(measurement: dict)
+}
+
+interface StorageBackend {
+  + save(data: dict)
+}
+
+class CSVStorage {
+  - filename
+  - fieldnames
+  + create_filename(file_dir: str)
+  + save(data: dict)
+}
+
+interface MqttPublisher {
+  + send(data: dict)
+}
+
+class MotorController {
+  - _state: MotorState
+  - _velocity_setpoint
+  - client
+  - SET_SPEED_NODE_ID
+  - ESTIMATED_SPEED_NODE_ID
+  + initialize()
+  + get_state()
+  + test_drives_connection()
+  + get_torque()
+  + get_stpoint()
+  + set_speed(velocity)
+  + get_speed()
+  + bracket_index(current_time, timestamps)
+  + run_motor_map(current_time, timestamp_map, rpm_map)
+  + trigger_motor()
+  + running()
+  + reset()
+  + disable_motors()
+  - _send_command(command)
+  - _init_connection()
+}
+
+enum MotorState {
+  IDLE
+  RUNNING
+  ERROR
+}
+
+class TempReader {
+  - _sensors
+  - _board_id
+  + read_all()
+  - _read_sensor(sensor)
+}
+
+enum SensorID
+
+class OpcuaCommunication {
+  - url
+  - client
+  - root
+  - connected
+  + browse_nodes_children(node)
+  + get_child(node, target_name)
+  + write_parameter_float(setpoint, node_id)
+  + read_parameter(node_id)
+  + connect()
+}
+
+' Relationships
+SystemEngine *-- MotorController : motor_controller
+SystemEngine *-- TempReader : sensor_reader
+SystemEngine *-- DataLogger : data_logger
+
+DataLogger o-- StorageBackend
+CSVStorage -|> StorageBackend
+DataLogger ..> MqttPublisher : optional
+
+MotorController ..> OpcuaCommunication : uses client (dependency)
+MotorController .. MotorState
+TempReader .. SensorID
+
+' Frontend and entry points (represented as classes for clarity)
+class DashFrontend {
+  + register_callbacks(app)
+}
+class MainEntrypoint {
+  + run()
+}
+
+DashFrontend ..> SystemEngine : reads measurements, set velocity, set_control_type
+MainEntrypoint ..> SystemEngine : starts test_execution thread
+
+@enduml

@@ -5,7 +5,7 @@
 #TODO: consider using USB filesystem instead of SD card for better durability
 
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import datetime, timezone
 import csv
 import os
 
@@ -28,7 +28,7 @@ class CSVStorage(StorageBackend):
         # Ensure directory exists
         os.makedirs(file_dir, exist_ok=True)
 
-        timestamp = datetime.utcnow().strftime("%Y%m%dT%H%M%S")
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
         return f"{file_dir}data_log_{timestamp}.csv"
         
     def save(self, data: dict):
@@ -50,7 +50,7 @@ class DataLogger:
 
     def log(self, measurement: dict):
         """Add timestamp and save/send measurement"""
-        measurement_with_time = {"timestamp": datetime.utcnow().isoformat(), **measurement}
+        measurement_with_time = {"timestamp": datetime.now(timezone.utc).isoformat(), **measurement}
         
         # Save locally
         self.storage.save(measurement_with_time)

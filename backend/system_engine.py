@@ -84,7 +84,7 @@ class SystemEngine:
         meassurements, _ = self.sensor_reader.read_all()
 
         with self.lock:
-            self.meassurements = meassurements.copy() #TODO: make sure meassurements is doesn't contain nested objects (this is shallow copy)
+            self.meassurements = meassurements.copy() #TODO: make sure meassurements doesn't contain nested objects (this is shallow copy)
             motor_velocity = self.motor_controller.get_speed() #TODO: make sure it doesnt block controller (mutex)
 
             self.velocity_plot["rpm"].append(motor_velocity) #TODO: save time and velocity to one datastructure

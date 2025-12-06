@@ -7,14 +7,15 @@ elif sys.platform.startswith('linux'):
 else:
     print("Unsupported OS")
 
-from dash import Input, Output, html, dcc, State
+from dash import Input, Output, html, dcc, Dash
 import plotly.express as px
-import numpy as np
 import plotly.graph_objects as go
+
+import numpy as np
 
 input_figure = None
 
-def add_input_point(figure, timestamp_points, rpm_points):
+def add_input_point(figure: go.Figure, timestamp_points, rpm_points):
     figure.add_scatter(
         x=timestamp_points,
         y=rpm_points,
@@ -50,7 +51,7 @@ def generate_test_map_input_figures():
 
             ])  
 
-def callback_test_map_input_figures(app):   
+def callback_test_map_input_figures(app: Dash):   
     @app.callback(
         Output("clickable-canvas", "figure"),
         Input("clickable-canvas", "clickData"),
