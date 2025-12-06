@@ -1,10 +1,15 @@
 from dash import html, dcc
 
 app_layout  = html.Div([
-    dcc.Tabs(id="tabs", value="tab1", children=[
-        dcc.Tab(label="Tab 1", value="tab1"),
-        dcc.Tab(label="Tab 2 (Plots 1–4)", value="tab2"),
-        dcc.Tab(label="Tab 3 (Plots 5–8)", value="tab3"),
+    dcc.Tabs(id="tabs", value="test_map_input_figures", children=[
+        dcc.Tab(label="System conectivity", value="system_conectivity"),
+        dcc.Tab(label="Motor drive parameters", value="motor_drive_parameters"),
+        dcc.Tab(label="Load drive parameters", value="load_drive_parameters"),
+        dcc.Tab(label="Test map input figures", value="test_map_input_figures"),
+        dcc.Tab(label="Test control panel", value="test_control_panel"),
+        dcc.Tab(label="Sensors data", value="sensors_data"),
+        dcc.Tab(label="Anomaly detection", value="anomaly_detection"),        
+        dcc.Tab(label="Safty", value="safty"),
     ]),
     html.Div(id="tab-content"),
     dcc.Interval(id='interval', interval=100, n_intervals=0)

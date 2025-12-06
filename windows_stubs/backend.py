@@ -9,13 +9,13 @@ from enum import Enum
 import time
 
 DATA_FILES_PATH = "./data/"  
+OPCUA_URL = 'opc.tcp://localhost:4840'
 
-# url = "opc.tcp://127.0.0.1"
-# opcua_client = OpcuaCommunication(url)
+opcua_client = OpcuaCommunication(OPCUA_URL)
 
 csv_storage = CSVStorage(DATA_FILES_PATH)
 data_logger = DataLogger(csv_storage) #, mqtt_publisher)
 
-motor_controller = MotorController()
+motor_controller = MotorController(opcua_client)
 temp_reader = TempReader()
 backend_engine = SystemEngine(data_logger, motor_controller, temp_reader)
