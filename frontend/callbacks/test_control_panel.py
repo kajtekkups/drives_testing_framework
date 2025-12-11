@@ -79,11 +79,11 @@ def callback_test_control_panel(app):
     )
     def update_output(n_clicks, n_intervals, input_value, run_clicks, run_map_clicks, stop_click):     
         #TODO: refactor i trigger conditions for all 
-        rpm, meassurement_time = backend_engine.get_velocity_plot() 
+        velocity_plot = backend_engine.get_velocity_plot() 
         vel_fig = {
             'data': [{
-                'x': meassurement_time,
-                'y': rpm,
+                'x': velocity_plot.meassurement_time,
+                'y': velocity_plot.rpm,
                 'type': 'scatter',
                 'mode': 'lines+markers'
             }],

@@ -7,7 +7,9 @@ elif sys.platform.startswith('linux'):
 else:
     print("Unsupported OS")
 
-from dash import Input, Output, html, dcc, Dash
+from backend.system_engine import VelocityPlot #TODO: remove dependency on system_engine
+
+from dash import Input, Output, html, dcc, Dash, State, ctx
 import plotly.express as px
 import plotly.graph_objects as go
 
@@ -15,10 +17,10 @@ import numpy as np
 
 input_figure = None
 
-def add_input_point(figure: go.Figure, timestamp_points, rpm_points):
+def add_input_point(figure: go.Figure, test_map):
     figure.add_scatter(
-        x=timestamp_points,
-        y=rpm_points,
+        x=test_map.timestamp,
+        y=test_map.rpm,
         mode='lines+markers',
         line=dict(color='black', width=1),
         marker=dict(color='red', size=10),
@@ -40,8 +42,8 @@ def generate_plot():
 def generate_test_map_input_figures():
     global input_figure
     input_figure = generate_plot()
-    timestamp_points, rpm_points =  backend_engine.get_motor_test_map()
-    add_input_point(input_figure, timestamp_points, rpm_points)
+    test_map =  backend_engine.get_motor_test_map()
+    add_input_point(input_figure, test_map)
 
     return html.Div([
                 html.H3("Click anywhere on the blank canvas"),
@@ -49,16 +51,37 @@ def generate_test_map_input_figures():
                           figure=input_figure, 
                           style={'height': '800px'}),
 
+            html.Div([
+                dcc.Input(
+                    id='test_lenght',
+                    type='number',
+                    placeholder='input test lenght [s]',
+                    style={'marginRight': '10px'}
+                ),
+                html.Button('Submit', id='test_lenght_submit_button', n_clicks=0)
+            ], style={'marginTop': '20px'})
             ])  
 
 def callback_test_map_input_figures(app: Dash):   
     @app.callback(
         Output("clickable-canvas", "figure"),
-        Input("clickable-canvas", "clickData"),
+        [
+            Input("clickable-canvas", "clickData"),
+            Input("test_lenght_submit_button", "n_clicks")
+        ],
+        State("test_lenght", "value")
+
     )
-    def display_click(clickData):
-        #TODO: make sure, that the rpm differences are not too big
+    def display_click(clickData, n_clicks, test_lenght_input):
         global input_figure
+
+        if ctx.triggered_id == "test_lenght_submit_button":
+            backend_engine.set_map_test_time(test_lenght_input)
+            backend_engine.clean_test_map()
+            input_figure = generate_plot()
+            return input_figure
+        
+        #TODO: make sure, that the rpm differences are not too big
         if clickData is None:
             # Return figure without changes            
             return input_figure
@@ -67,24 +90,24 @@ def callback_test_map_input_figures(app: Dash):
         x = clickData['points'][0]['x']
         y = clickData['points'][0]['y']
 
-        timestamp_points, rpm_points =  backend_engine.get_motor_test_map()
+        test_map =  backend_engine.get_motor_test_map()
 
         # Toggle point: remove if exists, else add
-        if (x, y) in zip(timestamp_points, rpm_points): #TODO: fix floating point comparision
-            idx = list(zip(timestamp_points, rpm_points)).index((x, y))
-            timestamp_points.pop(idx) #TODO: Dash sometimes doesn't detect in-place mutations, but sometimes throws error
-            rpm_points.pop(idx) #TODO: Dash sometimes doesn't detect in-place mutations, but sometimes throws error
+        if (x, y) in zip(test_map.timestamp, test_map.rpm): #TODO: fix floating point comparision
+            idx = list(zip(test_map.timestamp, test_map.rpm)).index((x, y))
+            test_map.timestamp.pop(idx) #TODO: Dash sometimes doesn't detect in-place mutations, but sometimes throws error
+            test_map.rpm.pop(idx) #TODO: Dash sometimes doesn't detect in-place mutations, but sometimes throws error
             input_figure = generate_plot()
-        elif all(x > previos_x for previos_x in timestamp_points):
-            timestamp_points.append(x) #TODO: Dash sometimes doesn't detect in-place mutations, but sometimes throws error
-            rpm_points.append(y) #TODO: Dash sometimes doesn't detect in-place mutations, but sometimes throws error
+        elif all(x > previos_x for previos_x in test_map.timestamp):
+            test_map.timestamp.append(x) #TODO: Dash sometimes doesn't detect in-place mutations, but sometimes throws error
+            test_map.rpm.append(y) #TODO: Dash sometimes doesn't detect in-place mutations, but sometimes throws error
         else:
             print("\ncan not insert point here\n")
 
         # Add points **and connect them with lines**
-        add_input_point(input_figure, timestamp_points, rpm_points)
+        add_input_point(input_figure, test_map)
         
-        backend_engine.set_motor_test_map(timestamp_points, rpm_points) #TODO: add button and if statement to send map
+        backend_engine.set_motor_test_map(test_map) #TODO: add button and if statement to send map
         print(f"You clicked at x={x}, y={y}")
-        print(timestamp_points, rpm_points)
+        print(test_map.timestamp, test_map.rpm)
         return input_figure
