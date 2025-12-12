@@ -10,26 +10,6 @@ class OpcuaCommunication:
         self.root = None
         self.connected = False
 
-        
-
-    def browse_nodes_children(self, node):
-        try:
-            print(f"Parent: {node.get_browse_name()} ({node.nodeid})")
-        except:
-            print(f"<unreadable> ({node})")
-            return
-        # Browse children
-        for child in node.get_children():
-            print("BrowseName:", child.get_browse_name(), "| NodeId:", child.nodeid.to_string())
-            
-
-    def get_child(self, node, target_name):
-        for child in node.get_children():                    
-            if child.get_browse_name().Name == target_name:
-                print("Found node:", child)
-                return child
-        return None
-
     def write_parameter_float(self, setpoint, node_id):
         node = self.client.get_node(node_id)    
         node.set_value(ua.Variant(float(setpoint), ua.VariantType.Float)) 
@@ -52,19 +32,21 @@ class OpcuaCommunication:
                 print(f"Could not connect to {self.url}: {e}")
     
 
-if __name__ == '__main__':
-    
-    opcua_communication = OpcuaCommunication(url)
-    opcua_communication.connect()
 
-    target_node = opcua_communication.root
 
-    while True:            
-        name = input("Enter node name: ")
-        if name == "0":
-            target_node = opcua_communication.set_speed_setpoint()
-        else:
-            new_target_node = opcua_communication.get_child(target_node, name)
-            if new_target_node is not None:
-                target_node = new_target_node            
-        opcua_communication.browse_nodes_children(target_node)
+class OpcuaCommunicationStub:
+    def __init__(self, url):
+        self.url = url
+        self.client = Client(url)
+        self.root = None
+        self.connected = False
+
+    def write_parameter_float(self, setpoint, node_id):
+        pass
+
+    def read_parameter(self, node_id):
+        return 0
+
+    def connect(self):
+        print("Connected to server")    
+        self.connected = True

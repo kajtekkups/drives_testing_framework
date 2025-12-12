@@ -1,23 +1,3 @@
-# from dash import Input, Output, html, dcc
-
-# def generate_system_conectivity():
-#     return html.Div([
-#                 html.H3("system_conectivity"),
-#                 html.Div([
-#                     html.Div(id="system_conectivity_example")                
-#                 ]),
-#                 # dcc.Interval(id='interval', interval=1000, n_intervals=0) #TODO: decide to use local or global interval
-#             ])
-
-# def callback_system_conectivity(app):
-#     @app.callback(
-#         Output('system_conectivity_example', 'children'),
-#         Input('interval', 'n_intervals')
-#     )
-#     def update_system_conectivity(n_intervals):
-#         return 'system_conectivity template'
-
-
 from dash import Input, Output, State, html, dcc, callback_context
 
 SECTION_STYLE = {
@@ -170,32 +150,9 @@ def generate_system_conectivity(use_interval=False):
                         [
                             html.Div(
                                 [
-                                    html.Label("DB Host", style=LABEL_STYLE),
-                                    dcc.Input(id="db-host", placeholder="db.example.local", type="text", style={"width": "100%"}),
+                                    html.Label("USB drive", style=LABEL_STYLE),
                                 ],
-                                style=ROW_STYLE,
-                            ),
-                            html.Div(
-                                [
-                                    html.Label("DB Name", style=LABEL_STYLE),
-                                    dcc.Input(id="db-name", placeholder="prod_db", type="text", style={"width": "100%"}),
-                                ],
-                                style=ROW_STYLE,
-                            ),
-                            html.Div(
-                                [
-                                    html.Label("Read/Write Mode", style=LABEL_STYLE),
-                                    dcc.RadioItems(
-                                        id="db-mode",
-                                        options=[
-                                            {"label": "Read-Only", "value": "ro"},
-                                            {"label": "Read/Write", "value": "rw"},
-                                        ],
-                                        value="ro",
-                                        inline=True,
-                                    ),
-                                ],
-                                style=ROW_STYLE,
+                                style=ROW_STYLE,                            
                             ),
                             html.Div(id="db-summary", style={"marginTop": "8px"}),
                         ],
