@@ -14,7 +14,7 @@ TEMPERATURE_SENSORS_NUMBER = len(SensorID)
 plot_data = {f"plot{i}": {"x": [], "y": []} for i in range(TEMPERATURE_SENSORS_NUMBER)}
 from dash import Input, Output, html, dcc
 
-def generate_tab3():
+def generate_sensors_data():
     return html.Div([
                 html.H3("Live Plots 5–8"),
                 html.Div([
@@ -23,12 +23,12 @@ def generate_tab3():
                 ])
             ])
 
-def callback_tab3(app):
+def callback_sensors_data(app):
     @app.callback(
         [Output(f'plot{i}', 'figure') for i in range(TEMPERATURE_SENSORS_NUMBER)],
         Input('interval', 'n_intervals')
     )
-    def update_tab3(n_intervals):
+    def update_sensors_data(n_intervals):
         figures = []
         measurements = backend_engine.get_measurements()
         time = backend_engine.get_time()

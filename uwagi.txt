@@ -1,0 +1,6 @@
+motor Feedback -> estimated, how is it estimated and how it will affect our tests
+Wykres w zakładce 2 powinien się aktualizować za każdym razem dla nowego runa?
+
+W zakładce 1 wykres powinien łączyć punkty w formie step response
+obsługa błędów:
+Rozłączanie z serwerem opcua

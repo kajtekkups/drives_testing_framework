@@ -23,7 +23,7 @@ example_fig.update_layout(
 )
 
 
-def generate_tab2():
+def generate_test_control_panel():
     return html.Div([
         html.H3("Example input", style={"textAlign": "center"}),
 
@@ -44,9 +44,13 @@ def generate_tab2():
 
                 html.Button("Submit", id="motor_velocity_button", n_clicks=0),
 
-                html.Button("Run Motor", id="run_motor_button", n_clicks=0),
+                html.Button("Run Motor - setpoint ", id="run_motor_setpoint_button", n_clicks=0),
 
-                html.Button("Stop Motor", id="stop_motor_button", n_clicks=0)
+                html.Button("Run Motor - map ", id="run_motor_map_button", n_clicks=0),
+
+                html.Button("Stop Motor", id="stop_motor_button", n_clicks=0),
+
+                html.Div(id="motor_setpoint") 
             ],
             style={
                 "flex": "30%",
@@ -60,23 +64,26 @@ def generate_tab2():
     ])
 
 
-def callback_tab2(app):
+def callback_test_control_panel(app):
     @app.callback(
         # Output("motor_velocity_output", "children"),
         Output("velocity_plot", "figure"),
+        Output("motor_setpoint", "children"),
+        
         Input("motor_velocity_button", "n_clicks"),
         Input('interval', 'n_intervals'),
         State("motor_velocity_input", "value"),
-        Input("run_motor_button", "n_clicks"),
+        Input("run_motor_setpoint_button", "n_clicks"),
+        Input("run_motor_map_button", "n_clicks"),        
         Input("stop_motor_button", "n_clicks")        
     )
-    def update_output(n_clicks, n_intervals, input_value, run_clicks, stop_click):     
+    def update_output(n_clicks, n_intervals, input_value, run_clicks, run_map_clicks, stop_click):     
         #TODO: refactor i trigger conditions for all 
-        rpm, meassurement_time = backend_engine.get_velocity_plot() 
+        velocity_plot = backend_engine.get_velocity_plot() 
         vel_fig = {
             'data': [{
-                'x': meassurement_time,
-                'y': rpm,
+                'x': velocity_plot.meassurement_time,
+                'y': velocity_plot.rpm,
                 'type': 'scatter',
                 'mode': 'lines+markers'
             }],
@@ -88,16 +95,16 @@ def callback_tab2(app):
         if ctx.triggered_id == "motor_velocity_button":
             backend_engine.set_velocity(input_value) 
 
-        if ctx.triggered_id == "run_motor_button":
-            backend_engine.motor_controller.run_motor_map()        
-        
+        if ctx.triggered_id == "run_motor_setpoint_button":
+            backend_engine.set_control_type(backend_engine.SETPOINT_CONTROL)
+            backend_engine.motor_controller.trigger_motor()        
+
+        if ctx.triggered_id == "run_motor_map_button":
+            backend_engine.set_control_type(backend_engine.MAP_CONTROL)
+            backend_engine.motor_controller.trigger_motor()     #TODO: change the way map control is triggered              
+
         if ctx.triggered_id == "stop_motor_button":
-            backend_engine.motor_controller.reset()
+            backend_engine.motor_controller.reset() #TODO: make sure stoping is handled properly
         
-        return vel_fig
-    
-        #TODO: do wywalenia
-        # if n_clicks > 0:
-        #     stored_value = input_value
-        #     return f"You entered: {stored_value}", vel_fig
-        # return "No input yet.", vel_fig
+        setpoint =  f"Current setpoint: {backend_engine.motor_controller.get_stpoint()}"
+        return vel_fig, setpoint
