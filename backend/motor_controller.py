@@ -2,9 +2,13 @@
 # 2. log data from drives
 # 3. trigger motors, set torque/speed
 # 4. set specified test map
+from common.data_classes import Connectionstatus
+from common.server import ServerInstance
+import common.drive_parameters as param
+
 from enum import Enum, auto
-import numpy as np
 import bisect
+
 
 class MotorState(Enum):
     IDLE = auto()
@@ -12,20 +16,24 @@ class MotorState(Enum):
     ERROR = auto()
 
 
-class MotorController:
+class MotorController(ServerInstance):
     def __init__(self, client):
         self._state = MotorState.IDLE
         self._velocity_setpoint = 0 
         self.client = client
 
-        #TODO: speed is predicted here, use parameter 1.1
-        self.SET_SPEED_NODE_ID =            "ns=10;i=1703958" # 022 Speed reference selection -> 026 Constant speed 1
-        self.ESTIMATED_SPEED_NODE_ID =      "ns=10;i=131073"  # 001 Actual values -> Motor speed estimated
+
 
 # --- Public API ---
     # @property
     def initialize(self):
         self.client.connect()
+
+    def get_connection_status(self) -> Connectionstatus:
+        return self.client.get_connection_status()
+    
+    def read_parameter(self, parameter_id):
+        return self.client.read_parameter(parameter_id) 
 
     def get_state(self):
         return self._state
@@ -34,7 +42,9 @@ class MotorController:
         pass
     
     def get_torque(self):
-        pass
+        #TODO: add mock for testing without VD, np.random.randint(1, 100) 
+        #TODO: should mutex be added?
+        return self.client.read_parameter(param.MOTOR_TORQUE) 
     
     def get_stpoint(self):
         return self._velocity_setpoint
@@ -44,14 +54,14 @@ class MotorController:
         #TODO: add ramp so the change of a setpoint isn't too big
         #TODO: should mutex be added?
         self._velocity_setpoint = velocity
-        self.client.write_parameter_float(velocity, self.SET_SPEED_NODE_ID)
+        self.client.write_parameter_float(velocity, param.SET_SPEED_NODE_ID)
       
     def get_speed(self):
         #TODO: add mock for testing without VD, np.random.randint(1, 100) 
         #TODO: should mutex be added?
-        return self.client.read_parameter(self.ESTIMATED_SPEED_NODE_ID) 
-
-
+        #TODO: speed is predicted here, use parameter 1.1
+        return self.client.read_parameter(param.ESTIMATED_SPEED_NODE_ID) 
+    
     def bracket_index(self, current_time, timestamps):
         #TODO: refactor and test this function
         """
@@ -76,15 +86,20 @@ class MotorController:
             return i
         return None
 
-    def run_motor_map(self, current_time, timestamp_map, rpm_map):
+    def run_motor_map_speed(self, current_time, timestamp_points, rpm_points):
         self._state = MotorState.RUNNING
 
-        rpm_index = self.bracket_index(current_time, timestamp_map)
-        if rpm_index < len(rpm_map):
-            self.set_speed(rpm_map[rpm_index])
+        rpm_index = self.bracket_index(current_time, timestamp_points)
+        if rpm_index is None:
+            self.disable_motors()
+        elif rpm_index < len(rpm_points):
+            self.set_speed(rpm_points[rpm_index])
         else:
             #TODO: handle error properly
             self.disable_motors()
+
+    def run_motor_map_torque(self, current_time, timestamp_points, torque_points):
+        pass
 
     def trigger_motor(self):
         self._state = MotorState.RUNNING
@@ -98,10 +113,3 @@ class MotorController:
 
     def disable_motors(self):
         self._state = MotorState.IDLE
-
-# --- Internal logic ---
-    def _send_command(self, command):
-        pass
-
-    def _init_connection(self):
-        pass

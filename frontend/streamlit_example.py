@@ -81,4 +81,4 @@ with tab3:
 st.session_state
 
 # Run the autorefresh about every 2000 milliseconds (2 seconds)
-count = st_autorefresh(interval=2000, key="fizzbuzzcounter")
+count = st_autorefresh(interval=100, key="fizzbuzzcounter")
