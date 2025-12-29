@@ -12,7 +12,8 @@ app.layout = app_layout
 register_callbacks(app)
 
 if __name__ == '__main__':
-    backend_engine.initialize()
+    connection_thread = threading.Thread(target=backend_engine.initialize, daemon=True)
+    connection_thread.start() #TODO: think about better option for keeping connection, like reconectiong etc.
 
     thread = threading.Thread(target=backend_engine.test_execution, daemon=True)
     thread.start()

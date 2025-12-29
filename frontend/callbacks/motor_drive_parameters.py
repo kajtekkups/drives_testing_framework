@@ -1,3 +1,14 @@
+import sys
+if sys.platform.startswith('win'):
+    from windows_stubs.backend import backend_engine
+elif sys.platform.startswith('linux'):
+    from backend.backend import backend_engine
+else:
+    print("Unsupported OS")
+
+import common.drive_parameters as param
+from common.data_classes import ServerId
+
 from dash import Dash, Input, Output, State, ALL, html, dcc
 import dash
 import random
@@ -9,32 +20,32 @@ import typing
 # -------------------------
 # Każdy parametr: id (unikalny string), name (etykieta), section (grupa), default, unit, type ('num'|'text')
 PARAMETERS = [
-    # Sekcja 19 - tryby pracy
-    {"id": "19_current_mode", "name": "19.1 Aktualny tryb pracy", "section": "19 - tryby pracy", "default": "prędkość", "unit": "m/s", "type": "text", "opcua_id": "exaple"},
-    {"id": "19_ext_source_select", "name": "19.11 Źródło zewnętrzne", "section": "19 - tryby pracy", "default": "WE1", "unit": "", "type": "text", "opcua_id": "exaple"},
-    {"id": "19_local_lock", "name": "19.17 Blokada sterowania lokalnego", "section": "19 - tryby pracy", "default": False, "unit": "", "type": "text", "opcua_id": "exaple"},
+    # Sekcja 19 - Operation mode
+    {"id": "19_current_mode", "name": "19.1 Aktual operation mode", "section": "19 - Operation mode", "default": "3", "unit": "", "type": "num", "opcua_id": param.ACTUAL_OPERATION_MODE},
+    {"id": "19_ext_source_select", "name": "19.11 Źródło zewnętrzne", "section": "19 - Operation mode", "default": "0", "unit": "", "type": "num", "opcua_id": param.EXT1_EXT2_SELECTION },
+    {"id": "19_local_lock", "name": "19.17 Blokada sterowania lokalnego", "section": "19 - Operation mode", "default": "0", "unit": "", "type": "num", "opcua_id": param.LOCAL_CONTROL_DISABLE },
 
     # Sekcja 20 - Start/Stop/Kierunek
-    {"id": "20_we1_mode", "name": "20.1 We1: Start/Kierunek (tryb)", "section": "20 - Start/Stop/Kierunek", "default": "We1: start/sign", "unit": "", "type": "text", "opcua_id": "exaple"},
-    {"id": "20_edge_or_level", "name": "20.2 Start: zbocze/poziom", "section": "20 - Start/Stop/Kierunek", "default": "zbocze", "unit": "", "type": "text", "opcua_id": "exaple"},
-    {"id": "20_we1_value", "name": "20.3 Wartość dla We1", "section": "20 - Start/Stop/Kierunek", "default": 1.0, "unit": "", "type": "num", "opcua_id": "exaple"},
-    {"id": "20_stop_on_disable", "name": "20.11 Zatrzymanie przy wyłączeniu zezwolenia", "section": "20 - Start/Stop/Kierunek", "default": True, "unit": "", "type": "text", "opcua_id": "exaple"},
-    {"id": "20_enable_source", "name": "20.12 Źródło zezwolenia na bieg", "section": "20 - Start/Stop/Kierunek", "default": "lokalne", "unit": "", "type": "text", "opcua_id": "exaple"},
-    {"id": "20_allow_positive", "name": "20.23 Zezwolenie na dodatnią wartość zadaną", "section": "20 - Start/Stop/Kierunek", "default": True, "unit": "", "type": "text", "opcua_id": "exaple"},
-    {"id": "20_allow_negative", "name": "20.24 Zezwolenie na ujemną wartość zadaną", "section": "20 - Start/Stop/Kierunek", "default": False, "unit": "", "type": "text", "opcua_id": "exaple"},
+    {"id": "20_we1_mode", "name": "20.1 We1: Start/Kierunek (tryb)", "section": "20 - Start/Stop/Kierunek", "default": "2", "unit": "", "type": "num", "opcua_id": param.EXT1_COMMANDS },
+    {"id": "20_edge_or_level", "name": "20.2 Start: zbocze/poziom", "section": "20 - Start/Stop/Kierunek", "default": "1", "unit": "", "type": "num", "opcua_id": param.EXT1_START_TRIGGER_TYPE },
+    {"id": "20_we1_value", "name": "20.3 Wartość dla We1", "section": "20 - Start/Stop/Kierunek", "default": "1", "unit": "", "type": "num", "opcua_id": param.EXT1_IN1_SOURCE },
+    {"id": "20_stop_on_disable", "name": "20.11 Zatrzymanie przy wyłączeniu zezwolenia", "section": "20 - Start/Stop/Kierunek", "default": 0, "unit": "", "type": "num", "opcua_id": param.RUN_ENABLE_STOP_MODE },
+    {"id": "20_enable_source", "name": "20.12 Źródło zezwolenia na bieg", "section": "20 - Start/Stop/Kierunek", "default": "1", "unit": "", "type": "num", "opcua_id": param.RUN_ENABLE_1_SOURCE },
+    {"id": "20_allow_positive", "name": "20.23 Zezwolenie na dodatnią wartość zadaną", "section": "20 - Start/Stop/Kierunek", "default": "1", "unit": "", "type": "num", "opcua_id": param.POSITIVE_SPEED_ENABLE },
+    {"id": "20_allow_negative", "name": "20.24 Zezwolenie na ujemną wartość zadaną", "section": "20 - Start/Stop/Kierunek", "default": "1", "unit": "", "type": "num", "opcua_id": param.NEGATIVE_SPEED_ENABLE },
 
     # Sekcja 21 - Start/Stop modes (DTC etc.)
-    {"id": "21_start_mode", "name": "21.1 Tryb startu", "section": "21 - Start/Zatrzymanie", "default": "Automatyczny", "unit": "", "type": "text", "opcua_id": "exaple"},
-    {"id": "21_stop_mode", "name": "21.3 Tryb zatrzymania", "section": "21 - Start/Zatrzymanie", "default": "normalne", "unit": "", "type": "text", "opcua_id": "exaple"},
-    {"id": "21_emergency_stop_mode", "name": "21.4 Tryb zatrzymania awaryjnego", "section": "21 - Start/Zatrzymanie", "default": "natychmiastowy", "unit": "", "type": "text", "opcua_id": "exaple"},
-    {"id": "21_emergency_source", "name": "21.5 Źródło zatrzymania awaryjnego", "section": "21 - Start/Zatrzymanie", "default": "E-Stop", "unit": "", "type": "text", "opcua_id": "exaple"},
-    {"id": "21_zero_speed_limit", "name": "21.6 Limit prędkości zerowej", "section": "21 - Start/Zatrzymanie", "default": 0.5, "unit": "rpm", "type": "num", "opcua_id": "exaple"},
+    {"id": "21_start_mode", "name": "21.1 Tryb startu", "section": "21 - Start/Zatrzymanie", "default": "2", "unit": "", "type": "num", "opcua_id": param.START_MODE },
+    {"id": "21_stop_mode", "name": "21.3 Tryb zatrzymania", "section": "21 - Start/Zatrzymanie", "default": "0", "unit": "", "type": "num", "opcua_id": param.STOP_MODE },
+    {"id": "21_emergency_stop_mode", "name": "21.4 Tryb zatrzymania awaryjnego", "section": "21 - Start/Zatrzymanie", "default": "0", "unit": "", "type": "num", "opcua_id": param.EMERGENCY_STOP_MODE },
+    {"id": "21_emergency_source", "name": "21.5 Źródło zatrzymania awaryjnego", "section": "21 - Start/Zatrzymanie", "default": "1", "unit": "", "type": "num", "opcua_id": param.EMERGENCY_STOP_SOURCE },
+    {"id": "21_zero_speed_limit", "name": "21.6 Limit prędkości zerowej", "section": "21 - Start/Zatrzymanie", "default": 30.0, "unit": "rpm", "type": "num", "opcua_id": param.ZERO_SPEED_LIMIT },
 
     # Sekcja 22 - wartość zadana prędkości
-    {"id": "22_speed_source", "name": "22.21 Funkcja stałej prędkości", "section": "22 - Wartość zadana prędkości", "default": "wyłączona", "unit": "", "type": "text", "opcua_id": "exaple"},
-    {"id": "22_const_speed_select", "name": "22.22 Wybór stałej prędkości (1-7)", "section": "22 - Wartość zadana prędkości", "default": 1, "unit": "", "type": "num", "opcua_id": "exaple"},
-    {"id": "22_critical_speed1", "name": "22.51 Prędkość krytyczna 1", "section": "22 - Wartość zadana prędkości", "default": 1500, "unit": "rpm", "type": "num", "opcua_id": "exaple"},
-    {"id": "22_critical_speed2", "name": "22.52 Prędkość krytyczna 2", "section": "22 - Wartość zadana prędkości", "default": 3000, "unit": "rpm", "type": "num", "opcua_id": "exaple"},
+    {"id": "22_speed_source", "name": "22.21 Funkcja stałej prędkości", "section": "22 - Wartość zadana prędkości", "default": "1", "unit": "", "type": "num", "opcua_id": param.CONSTANT_SPEED_FUNCTION },
+    {"id": "22_const_speed_select", "name": "22.22 Wybór stałej prędkości (1-7)", "section": "22 - Wartość zadana prędkości", "default": "1", "unit": "", "type": "num", "opcua_id": param.CONSTANT_SPEED_SEL1},
+    {"id": "22_critical_speed1", "name": "22.51 Prędkość krytyczna 1", "section": "22 - Wartość zadana prędkości", "default": 0, "unit": "rpm", "type": "num", "opcua_id": param.CRITICAL_SPEED_FUNCTION },
+    {"id": "22_critical_speed2", "name": "22.52 Prędkość krytyczna 2", "section": "22 - Wartość zadana prędkości", "default": 0.0, "unit": "rpm", "type": "num", "opcua_id": param.CRITICAL_SPEED_1_LOW },
 ]
 
 # -------------------------
@@ -44,27 +55,14 @@ def build_defaults_dict():
     """Zwraca słownik defaults {param_id: default_value} na podstawie PARAMETERS."""
     return {p["id"]: p["default"] for p in PARAMETERS}
 
-def simulate_read_from_motor() -> dict:
-    """
-    Tymczasowa funkcja symulująca odczyt z silnika.
-    Zastąp ją funkcją, która rzeczywiście pobiera parametry z urządzenia.
-    Powinna zwracać dict {param_id: current_value}.
-    """
-    values = {}
+def read_from_motor() -> dict:  #TODO: use get_values from opcua client library to read all the nodes at once
+    values = {} 
     for p in PARAMETERS:
-        pid = p["id"]
-        if p["type"] == "num":
-            base = p["default"] if isinstance(p["default"], (int, float)) else 0
-            # losowo zmieniamy ±10% albo losowy tekst jeśli default był tekstem
-            noise = base * 0.1
-            # mała losowa zmiana żeby w UI widać było różnice
-            values[pid] = round(base + random.uniform(-noise, noise), 3)
-        else:
-            # tekstowe: czasem zmienimy aby pokazać różnicę
-            if random.random() < 0.15:
-                values[pid] = f"{p['default']}_alt"
-            else:
-                values[pid] = p["default"]
+        parameter_id = p["id"]
+        opcua_id = p["opcua_id"]
+
+        motor_instance = backend_engine.get_server(ServerId.motor_drive)
+        values[parameter_id] =  motor_instance.read_parameter(opcua_id)
     return values
 
 def group_params_by_section(params: typing.List[dict]) -> dict:
@@ -163,7 +161,7 @@ def callback_motor_drive_parameters(app: Dash):
         Ważne: zastąp simulate_read_from_motor() prawdziwym odczytem z urządzenia.
         """
         # Tu zamień na rzeczywisty odczyt z silnika:
-        current_values = simulate_read_from_motor()
+        current_values = read_from_motor()
 
         children_list = []
         styles_list = []

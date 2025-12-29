@@ -3,9 +3,14 @@
 #TODO: Ustalić czy nasz silnik sterowany jest za pomocą DTC
 #TODO: Przemienniki w układzie nadrzędny-podrzędny
 #TODO: Utrata komunikacji
+SET_SPEED_NODE_ID =            "ns=10;i=1703958" # 022 Speed reference selection -> 026 Constant speed 1
+
 
 #1.1 Zmierzona lub szacowana prędkość silnika w zależności - / real32 od używanego typu sprzężenia zwrotnego
+ESTIMATED_SPEED_NODE_ID =      "ns=10;i=131073"  # 001 Actual values -> Motor speed estimated
+
 #1.7 Prąd silnika
+MOTOR_CURRENT = "ns=10;i=458753"
 #1.10 Moment silnika
 #1.14 moc wyjściowa przemiennika
 #1.17 szacowana moc mechaniczna na wale silnika
@@ -14,17 +19,111 @@
 #1.104 Szacowany prąd czynny płynący przez moduł zasilający.
 #1.106 Szacowany prąd bierny płynący przez moduł zasilający.
 
+# parameter 1.001
+MOTOR_SPEED_USED = "ns=10;i=65537"
+# parameter 1.002
+MOTOR_SPEED_ESTIMATED = "ns=10;i=131073"
+# parameter 1.004
+ENCODER_1_SPEED_FILTERED = "ns=10;i=262145"
+# parameter 1.005
+ENCODER_2_SPEED_FILTERED = "ns=10;i=327681"
+# parameter 1.003
+MOTOR_SPEED_PERCENT = "ns=10;i=196609"
+# parameter 1.007
+MOTOR_CURRENT = "ns=10;i=458753"
+# parameter 1.006
+OUTPUT_FREQUENCY = "ns=10;i=393217"
+# parameter 1.008
+MOTOR_CURRENT_PERCENT_OF_MOTOR_NOM = "ns=10;i=524289"
+# parameter 1.010
+MOTOR_TORQUE = "ns=10;i=655361"
+# parameter 1.013
+OUTPUT_VOLTAGE = "ns=10;i=851969"
+# parameter 1.011
+DC_VOLTAGE = "ns=10;i=720897"
+# parameter 1.014
+OUTPUT_POWER = "ns=10;i=917505"
+# parameter 1.015
+OUTPUT_POWER_PERCENT_OF_MOTOR_NOM = "ns=10;i=983041"
+# parameter 1.020
+MOTOR_SHAFT_POWER = "ns=10;i=1314113"
+# parameter 1.021
+U_PHASE_CURRENT = "ns=10;i=1376257"
+# parameter 1.022
+V_PHASE_CURRENT = "ns=10;i=1441793"
+# parameter 1.023
+W_PHASE_CURRENT = "ns=10;i=1507329"
+# parameter 1.029
+SPEED_CHANGE_RATE = "ns=10;i=1900545"
+# parameter 1.030
+NOMINAL_TORQUE_SCALE = "ns=10;i=1966081"
+# parameter 1.031
+AMBIENT_TEMPERATURE = "ns=10;i=2031617"
+# parameter 1.080
+BACK_EMF_VOLTAGE = "ns=10;i=5242881"
+# parameter 1.102
+LINE_CURRENT = "ns=10;i=6684673"
 
-#5.4 Licznik czasu włącz. went.
-#5.10 Temp. karty sterowania
-#5.11 Szacowana temperatura przemiennika częstotliwości 
-#5.111 Szacowana temperatura modułu zasilającego jako wartość procentowa limitu błędu
+
+
+# parameter 5.004
+MAIN_FAN_ON_TIME_COUNTER = "ns=10;i=262149"
+# parameter 5.002
+RUN_TIME_COUNTER = "ns=10;i=131077"
+# parameter 5.010
+CONTROL_BOARD_TEMPERATURE = "ns=10;i=655365"
+# parameter 5.011
+INVERTER_TEMPERATURE = "ns=10;i=720901"
+# parameter 5.012
+IGBT_PHASE_U_TEMPERATURE = "ns=10;i=786437"
+# parameter 5.014
+IGBT_PHASE_W_TEMPERATURE = "ns=10;i=917509"
+# parameter 5.013
+IGBT_PHASE_V_TEMPERATURE = "ns=10;i=851973"
+# parameter 5.015
+INT_BOARD_TEMPERATURE = "ns=10;i=983045"
+# parameter 5.018
+CONTROL_BOARD_HUMIDITY = "ns=10;i=1179653"
+# parameter 5.048
+CONTROL_BOARD_TEMPERATURE_WARNING = "ns=10;i=3145733"
+# parameter 5.050
+IGBT_MAXIMUM_TEMPERATURE = "ns=10;i=3276805"
+# parameter 5.066
+PU_POWER_SUPPLY_TEMPERATURE = "ns=10;i=4325381"
+# parameter 5.143
+FLASH_MEMORY_USED_LIFETIME = "ns=10;i=9371653"
+# parameter 5.201
+MAXIMUM_MODULE_EARTH_CURRENT = "ns=10;i=13172741"
+# parameter 5.032
+FAN_ON_TIME_COUNTER_SECONDS = "ns=10;i=2097157"
+# parameter 5.031
+RUN_TIME_COUNTER_SECONDS = "ns=10;i=2031621"
+# parameter 5.030
+ON_TIME_COUNTER_SECONDS ="ns=10;i=1966085"
+
+
 
 # 19 - tryby pracy
 # 19.1 - Aktualny tryb pracy read (prędkością, moment, kombinacje, sterowanie skalarne,
 # 19.11 -  wybór źródła zewnętrznego miejsca sterowania
 # 19.12-19.16 - wybór trybu sterowania dla danego typu sterowania (upewnić się najpierw, jak będę sterował)
 # 19.17 - blokada sterowania lokalnego
+
+# parameter 19.001 
+ACTUAL_OPERATION_MODE = "ns=10;i=65555"
+# parameter 19.011 
+EXT1_EXT2_SELECTION = "ns=10;i=720915"
+# parameter 19.012 
+EXT1_CONTROL_MODE = "ns=10;i=786451"
+# parameter 19.014 
+EXT2_CONTROL_MODE = "ns=10;i=917523"
+# parameter 19.016 
+LOCAL_CONTROL_MODE = "ns=10;i=1048595"
+# parameter 19.017 
+LOCAL_CONTROL_DISABLE = "ns=10;i=1114131"
+
+
+
 
 # 20 - Start/Stop/Kierunek - 
 # 20.1 komendy Zew1 - ustawienie sterowania (start/stop/kierunek) dla źródła zewnętrznego 1:
@@ -41,6 +140,22 @@
 # 20.23 - zezwoleni na ujemną wartość zadaną (można wykożystać dla bezpieczeństwa na stanowisku testowym)
 # 20.25 - bieg próbny (sprawdzić do czego służy)
 
+# parameter 20.001 
+EXT1_COMMANDS = "ns=10;i=65556"
+# parameter 20.002 
+EXT1_START_TRIGGER_TYPE = "ns=10;i=131092"
+# parameter 20.003 
+EXT1_IN1_SOURCE = "ns=10;i=196628"
+# parameter 20.011 
+RUN_ENABLE_STOP_MODE = "ns=10;i=720916"
+# parameter 20.012 
+RUN_ENABLE_1_SOURCE = "ns=10;i=786452"
+# parameter 20.023 
+POSITIVE_SPEED_ENABLE = "ns=10;i=1507348"
+# parameter 20.024 
+NEGATIVE_SPEED_ENABLE = "ns=10;i=1572884"
+
+
 # 21.1 Tryb startu (jeżeli silnik sterowany jest DTC) W przypadku silników zmagnesamitrwałymiisynchro
 # nicznych silników reluktancyjnych należy użyć trybu
 # startu Automatyczny!!!
@@ -50,12 +165,41 @@
 # 21.5 Żródło zatrzymania awaryjnego
 # 21.6 Limit prędkości zerowej
 # TODO 21.7-21.18 po przeczytaniu Czym jest magnesowanie (str. 71)
-# 
+
+# parameter 21.001 
+START_MODE = "ns=10;i=65557"
+# parameter 21.003 
+STOP_MODE = "ns=10;i=196629"
+# parameter 21.004 
+EMERGENCY_STOP_MODE = "ns=10;i=262165"
+# parameter 21.005 
+EMERGENCY_STOP_SOURCE = "ns=10;i=327701"
+# parameter 21.006 
+ZERO_SPEED_LIMIT = "ns=10;i=393237"
+# parameter 21.023 
+SMOOTH_START = "ns=10;i=1507349"
+# parameter 21.024 
+SMOOTH_START_CURRENT = "ns=10;i=1572885"
+# parameter 21.025 
+SMOOTH_START_SPEED = "ns=10;i=1638421"
+# parameter 21.037 
+MOTOR_TEMPERATURE_ESTIMATION = "ns=10;i=2424853"
+
 
 # 22 - wybór wartości zadanej prędkości (Strona 695)
 # 22.21 - funkcja stałej prędkości
 # 22.22 - 22.24 Wybór, której stałej prędkości urzywać (jedna z 7)
 # 22.51, 22.52 22.53 - ustawienia prędkości krytycznej
+
+# parameter 22.021 
+CONSTANT_SPEED_FUNCTION = "ns=10;i=1376278"
+# parameter 22.022 
+CONSTANT_SPEED_SEL1 = "ns=10;i=1441814"
+# parameter 22.051 
+CRITICAL_SPEED_FUNCTION = "ns=10;i=3342358"
+# parameter 22.052 
+CRITICAL_SPEED_1_LOW = "ns=10;i=3407894"
+
 
 
 # 58 - Wbudowany modół komunikacyjny (zobaczyć pod którym jest opcua)

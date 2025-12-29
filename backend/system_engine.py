@@ -1,9 +1,11 @@
 import threading
 import time
 from dataclasses import dataclass
+from common.data_classes import ServerId, SERVERS
+from common.server import ServerInstance
 
 MEASUREMENT_TIME = 0.01  # seconds
-MAX_PLOT_MEASURMENTS = 1000
+MAX_PLOT_MEASURMENTS = 100
 
 ERROR_DETECTED = 666
 STATUS_OK = 7
@@ -15,25 +17,44 @@ class VelocityPlot:
     rpm:  list[int] #TODO: make sure it's int not float
 
 @dataclass
+class TorquePlot:
+    meassurement_time: list[int] #TODO: make sure it's int not float
+    torque:  list[int] #TODO: make sure it's int not float
+
+@dataclass
 class TestMap:
     timestamp: list[int] #TODO: make sure it's int not float
-    rpm:  list[int] #TODO: make sure it's int not float
+    setpoint:  list[int] #TODO: make sure it's int not float
+
 
 class SystemEngine:
-    def __init__(self, data_logger, motor_controller, sensor_reader):
+    def __init__(self, data_logger, sensor_reader, server_connections: list[ServerInstance]):
         self.data_logger = data_logger
-        self.motor_controller = motor_controller
+        
+        #TODO: fix it (remove motor_controler instance)
+        self.server_connections = server_connections
+
         self.sensor_reader = sensor_reader
 
         self.meassurements = self.sensor_reader._sensors
         self.velocity_setpoint = 0
         self.meassurement_time = 0
         
-        self.test_map = TestMap(timestamp=[0, 5, 10, 15], rpm=[0, 300, 500, 1000])
+        self.test_map_speed = TestMap(timestamp=[0, 5, 10], setpoint=[0, 300, 500]) #TODO: wrap testmaps in dictionary
+        self.test_map_torque = TestMap(timestamp=[0, 5, 10], setpoint=[0, 100, 200])
+        
         self.map_test_startup_time = None
 
-        self.velocity_plot = VelocityPlot(meassurement_time=[], rpm=[])
+        self.velocity_plots = {
+                                ServerId.motor_drive: VelocityPlot(meassurement_time=[], rpm=[]),
+                                ServerId.load_drive: VelocityPlot(meassurement_time=[], rpm=[])
+        }
         
+        self.torque_plots = {
+                                ServerId.motor_drive: TorquePlot(meassurement_time=[], torque=[]),
+                                ServerId.load_drive: TorquePlot(meassurement_time=[], torque=[])
+        }
+
         self.MAP_CONTROL = 12
         self.SETPOINT_CONTROL = 73
         self.control = self.SETPOINT_CONTROL
@@ -42,13 +63,22 @@ class SystemEngine:
         self.test_active = False
         self.lock = threading.Lock()
 
-        self.TEST_RUN_TIME = 20 #[s]
+        self.TEST_RUN_TIME = 10 #[s]
         self.MAX_MOTOR_SPEED = 3000 #[rpm]
+        self.MAX_LOAD_TORQUE = 350 #TODO: check this value
+
+
+    def get_server(self, server_id: ServerId) -> ServerInstance:
+        #TODO: make mutex?
+        return self.server_connections[server_id]
 
     def initialize(self):
-        self.motor_controller.initialize()
+        for server in self.server_connections.values():
+            if server is not None:
+                print(server)
+                server.initialize()
 
-    def set_control_type(self, control_type):
+    def set_control_type(self, control_type): #TODO: remove this function
         if control_type != self.MAP_CONTROL and control_type != self.SETPOINT_CONTROL:
             print("not a proper control type")
             return
@@ -58,27 +88,44 @@ class SystemEngine:
         with self.lock:
             return self.meassurements.copy()  # return a copy to avoid race conditions
     
-    def get_motor_test_map(self):
+    def get_motor_test_map(self, drive: ServerId):
         #TODO: add mutex
         #TODO: consider a deep copy
-        return self.test_map
-    
-    def clean_test_map(self):
-        self.test_map = TestMap(timestamp=[0], rpm=[0])
+        if drive == ServerId.motor_drive:
+            return self.test_map_speed
+        elif drive == ServerId.load_drive:
+            return self.test_map_torque
+        #TODO: throw exeption in else
 
-    def set_motor_test_map(self, test_map):
+
+    def clean_test_maps(self):
+        self.test_map_speed = TestMap(timestamp=[0], setpoint=[0])
+        self.test_map_torque = TestMap(timestamp=[0], setpoint=[0])
+
+    def set_motor_test_map_speed(self, test_map): #TODO: change as in get_motor_test_map
         #TODO: consider a deep copy
-        self.test_map.timestamp = test_map.timestamp #TODO: add mutex
-        self.test_map.rpm = test_map.rpm
+        self.test_map_speed.timestamp = test_map.timestamp #TODO: add mutex
+        self.test_map_speed.setpoint = test_map.setpoint
+
+    def set_motor_test_map_torque(self, test_map): #TODO: change as in get_motor_test_map
+        #TODO: consider a deep copy
+        self.test_map_torque.timestamp = test_map.timestamp #TODO: add mutex
+        self.test_map_torque.setpoint = test_map.setpoint
 
     def set_velocity(self, velocity):
         #add mutex
         self.velocity_setpoint = velocity
 
-    def get_velocity_plot(self):
+    def get_velocity_plots(self) -> dict[ServerId: VelocityPlot]:
         with self.lock:
             #TODO: consider deep copy
-            return self.velocity_plot
+            return self.velocity_plots
+
+    def get_torque_plots(self) -> dict[ServerId: TorquePlot]:
+        with self.lock:
+            #TODO: consider deep copy
+            return self.torque_plots
+        
 
     def get_time(self):
         return self.meassurement_time
@@ -86,7 +133,11 @@ class SystemEngine:
     def set_map_test_time(self, new_time):
         self.TEST_RUN_TIME = new_time
 
-    def get_map_size(self):
+    def get_torque_map_size(self):
+        scale_ratio = self.TEST_RUN_TIME/(4*self.MAX_LOAD_TORQUE)
+        return self.TEST_RUN_TIME, self.MAX_LOAD_TORQUE, scale_ratio
+    
+    def get_speed_map_size(self):
         scale_ratio = self.TEST_RUN_TIME/(4*self.MAX_MOTOR_SPEED)
         return self.TEST_RUN_TIME, self.MAX_MOTOR_SPEED, scale_ratio
 
@@ -101,39 +152,90 @@ class SystemEngine:
     def test_running(self):
         return self.test_active
 
+    def update_velocity_plots(self, meassurement_time):
+        for drive_type, plot_data in self.velocity_plots.items():
+            velocity = self.server_connections[drive_type].get_speed() #TODO: make sure it doesnt block controller (mutex)
+
+            plot_data.rpm.append(velocity) #TODO: save time and velocity to one datastructure
+            plot_data.meassurement_time.append(meassurement_time)
+            if len(plot_data.meassurement_time) > MAX_PLOT_MEASURMENTS:
+                plot_data.rpm.pop(0)
+                plot_data.meassurement_time.pop(0)
+
+    def update_torque_plots(self, meassurement_time):
+        for drive_type, plot_data in self.torque_plots.items():
+            torque = self.server_connections[drive_type].get_torque() #TODO: make sure it doesnt block controller (mutex)
+
+            plot_data.torque.append(torque) #TODO: save time and velocity to one datastructure
+            plot_data.meassurement_time.append(meassurement_time)
+            if len(plot_data.meassurement_time) > MAX_PLOT_MEASURMENTS:
+                plot_data.torque.pop(0)
+                plot_data.meassurement_time.pop(0)
+
+    def run_motor_maps(self, current_time):
+        # for drive in self.server_connections.keys():
+        #     testmap = self.get_motor_test_map(drive)
+        #     self.server_connections[drive].run_motor_map(current_time, testmap.timestamp, testmap.setpoint)    
+        motor_drive = self.server_connections[ServerId.motor_drive]
+        load_drive = self.server_connections[ServerId.load_drive]
+
+
+        testmap_motor_drive = self.get_motor_test_map(ServerId.motor_drive)
+        motor_drive.run_motor_map_speed(current_time, testmap_motor_drive.timestamp, testmap_motor_drive.setpoint)      
+
+        testmap_load_drive = self.get_motor_test_map(ServerId.load_drive)
+        load_drive.run_motor_map_torque(current_time, testmap_load_drive.timestamp, testmap_load_drive.setpoint)      
+
+
     def motor_data_processing(self, test_time):
         self.meassurement_time = test_time #TODO: set correct time for measurements
         meassurements, _ = self.sensor_reader.read_all()
 
-        with self.lock:
+        with self.lock: #TODO: chceck all the mutexes
             self.meassurements = meassurements.copy() #TODO: make sure meassurements doesn't contain nested objects (this is shallow copy)
-            motor_velocity = self.motor_controller.get_speed() #TODO: make sure it doesnt block controller (mutex)
-
-            self.velocity_plot.rpm.append(motor_velocity) #TODO: save time and velocity to one datastructure
-            self.velocity_plot.meassurement_time.append(self.meassurement_time)
-            if len(self.velocity_plot.meassurement_time) > MAX_PLOT_MEASURMENTS:
-                self.velocity_plot.rpm.pop(0)
-                self.velocity_plot.meassurement_time.pop(0)
-
+            
+            self.update_velocity_plots(test_time)
+            self.update_torque_plots(test_time)
+            
+        #TODO: add torque, speed etc to meassuremets
         self.data_logger.log(meassurements)
         
         if self.monitor_meassurements():
-            self.motor_controller.reset()
+            self.server_connections[ServerId.motor_drive].reset()
             #TODO: disable testing
             self.map_test_startup_time = None
             raise Exception("Motor control error")
 
+    def reset_velocity_plots(self):
+        self.velocity_plots = {
+            ServerId.motor_drive: VelocityPlot(meassurement_time=[], rpm=[]),
+            ServerId.load_drive: VelocityPlot(meassurement_time=[], rpm=[])
+        }
+
+    def reset_torque_plots(self):
+        self.torque_plots = {
+            ServerId.motor_drive: TorquePlot(meassurement_time=[], torque=[]),
+            ServerId.load_drive: TorquePlot(meassurement_time=[], torque=[])
+        }
+
     def motor_map(self):
         self.map_test_startup_time = time.time()
-        while self.motor_controller.running():
-            current_time = time.time() - self.map_test_startup_time
-            if current_time > self.TEST_RUN_TIME:
-                self.motor_controller.disable_motors() #TODO: handle disabling properly
+        self.reset_velocity_plots()
+        self.reset_torque_plots()
 
-            timestamp_map, rpm_map = self.get_motor_test_map()
-            self.motor_controller.run_motor_map(current_time, timestamp_map, rpm_map)          
+        while self.server_connections[ServerId.motor_drive].running():
+            current_time = time.time() - self.map_test_startup_time
+            
+            are_motor_drives_connected = self.server_connections[ServerId.motor_drive].get_connection_status().connected and self.server_connections[ServerId.load_drive].get_connection_status().connected
+            # are_motor_drives_connected = self.server_connections[ServerId.motor_drive].get_connection_status().connected #TODO: remove this stub
+            if current_time > self.TEST_RUN_TIME or (not are_motor_drives_connected):
+                self.server_connections[ServerId.motor_drive].disable_motors() #TODO: handle disabling properly, TODO:maybe make class for storing and disabling both drives
+                break
 
             self.motor_data_processing(current_time)
+            
+            self.run_motor_maps(current_time)   
+
             time.sleep(MEASUREMENT_TIME)
 
         #TODO: handle disabling map test corectly
@@ -141,21 +243,18 @@ class SystemEngine:
 
     def test_execution(self):  
         self.test_active = True 
-        while True:
-            if self.motor_controller.running():
+        while True: #TODO: clean while loops here (motor_map)
+            #TODO: pack test into functions
+            if self.server_connections[ServerId.motor_drive].running():
                 try:
                     if self.control == self.MAP_CONTROL:
                         self.motor_map()
 
-                    elif self.control == self.SETPOINT_CONTROL:
-                        self.motor_controller.set_speed(self.velocity_setpoint)
-                        self.motor_data_processing(time.time())
-
                 except Exception as e:
                     # ensure motors are disabled at the end of the test
                     self.test_active = False
-                    self.motor_controller.reset()
-                    print(e)
+                    self.server_connections[ServerId.motor_drive].reset()
+                    print("test_execution() error: ", e)
                     #TODO: test if throwing exeptions is working in both scenerios
             
             #TODO: handle motor disabling properly

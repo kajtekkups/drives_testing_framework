@@ -1,4 +1,20 @@
+import sys
+if sys.platform.startswith('win'):
+    from windows_stubs.backend import backend_engine
+elif sys.platform.startswith('linux'):
+    from backend.backend import backend_engine
+else:
+    print("Unsupported OS")
+
+from common.data_classes import SERVERS
+
 from dash import Input, Output, State, html, dcc, callback_context
+
+import time
+from datetime import datetime
+from dash import Output, Input, MATCH, ctx
+import random
+
 
 SECTION_STYLE = {
     "border": "1px solid #e1e4e8",
@@ -13,7 +29,6 @@ GRID_STYLE = {
     "gridTemplateColumns": "1fr 1fr",
     "gap": "16px",
 }
-
 
 #TODO: connect it to real sensors, change name to external sensors, because drives are hadled seperatly
 AVAILABLE_SENSORS = [
@@ -33,6 +48,70 @@ AVAILABLE_SENSORS = [
 LABEL_STYLE = {"display": "block", "fontWeight": "600", "marginBottom": "6px"}
 ROW_STYLE = {"marginBottom": "12px"}
 
+
+
+# (Optional) Minimal style defaults — remove if you already define these elsewhere
+CARD_STYLE = {
+    "border": "1px solid #e5e7eb",
+    "borderRadius": "12px",
+    "padding": "16px",
+    "background": "#ffffff",
+    "boxShadow": "0 1px 2px rgba(0,0,0,0.06)",
+    "display": "flex",
+    "flexDirection": "column",
+    "gap": "10px",
+    "minWidth": "260px",
+}
+ROW_STYLE = {"display": "flex", "alignItems": "center", "gap": "8px"}
+LABEL_MUTED = {"color": "#6b7280", "fontSize": "12px", "textTransform": "uppercase", "letterSpacing": "0.06em"}
+
+def server_card(server_id: str, name: str, url: str, kind: str):
+    """
+    A modern 'card' with:
+    - Big server name
+    - Prominent IP 'chip'
+    - URL in muted text
+    - Status badge (color + icon)
+    - Last update time
+    """
+    return html.Div(
+        [
+            # Header row: Name + Kind badge
+            html.Div(
+                [
+                    html.Div(name, className="h5-title"),
+                    html.Span(kind, className="badge kind-badge"),
+                ],
+                style={"display": "flex", "alignItems": "center", "justifyContent": "space-between"},
+            ),
+
+            # URL row – muted
+            html.Div(
+                [
+                    html.Span("Endpoint", style=LABEL_MUTED),
+                    html.Span(id={"type": "server-endpoint", "id": server_id},                        
+                              className="endpoint-code"),
+                ],
+                style=ROW_STYLE,
+            ),
+
+            # Status & last update
+            html.Div(
+                [
+                    html.Span("Status", style=LABEL_MUTED),
+                    html.Span(
+                        id={"type": "server-status", "id": server_id},
+                        className="status-badge status-unknown"
+                    ),
+                ],
+                style={"display": "flex", "alignItems": "center", "gap": "12px"},
+            ),
+        ],
+        style=CARD_STYLE,
+        id={"type": "server-card", "id": server_id}
+    )
+
+
 def section(title, children, section_id=None):
     """Small helper to render a consistent card-like section."""
     return html.Div(
@@ -51,9 +130,7 @@ def generate_system_conectivity(use_interval=False):
     """
     return html.Div(
         [
-            html.H3("system_conectivity", style={"marginBottom": "16px"}),
-
-            # Optional global interval
+            html.H3(style={"marginBottom": "16px"}),
 
             html.Div(
                 [
@@ -90,59 +167,18 @@ def generate_system_conectivity(use_interval=False):
                         [
                             html.Div(
                                 [
-                                    html.Label("Drive 1 URL", style=LABEL_STYLE),
-                                    html.Div("URL Example", id="url_1_output", style={"marginTop": "10px"}),                                    
-
-                                    html.Div(id="drive_1_status", style={
-                                        "padding": "10px",
-                                        "border": "1px solid #ccc",
-                                        "width": "200px",
-                                        "background": "#f50909",
-                                        "fontWeight": "bold"
-                                    })
-                              
-                                ],
-                                style=ROW_STYLE,
+                                    html.Div(className="section-title"),
+                                    html.Div(
+                                        [server_card(s.id, s.name, s.url, s.kind) for s in SERVERS],
+                                        style=GRID_STYLE,
+                                        id="servers-grid",
+                                    ),
+                                ]
                             ),
-
-                            html.Div(
-                                [
-                                    html.Label("Drive 2 URL", style=LABEL_STYLE),
-                                    html.Div("URL Example", id="url_2_output", style={"marginTop": "10px"}),                                    
-
-                                    html.Div(id="drive_2_status", style={
-                                        "padding": "10px",
-                                        "border": "1px solid #ccc",
-                                        "width": "200px",
-                                        "background": "#f50909",
-                                        "fontWeight": "bold"
-                                    })
-                              
-                                ],
-                                style=ROW_STYLE,
-                            ),
-
-                            html.Div(
-                                [
-                                    html.Label("MQTT", style=LABEL_STYLE),
-                                    html.Div("URL Example", id="MQTT_url_output", style={"marginTop": "10px"}),                                    
-
-                                    html.Div(id="MQTT_status", style={
-                                        "padding": "10px",
-                                        "border": "1px solid #ccc",
-                                        "width": "200px",
-                                        "background": "#f50909",
-                                        "fontWeight": "bold"
-                                    })
-                              
-                                ],
-                                style=ROW_STYLE,
-                            ),
-
-                            html.Div(id="net-result", style={"marginTop": "8px", "color": "#0366d6"}),
                         ],
                         section_id="section-network",
                     ),
+
 
                     # SECTION 3: Database
                     section(
@@ -158,51 +194,10 @@ def generate_system_conectivity(use_interval=False):
                         ],
                         section_id="section-database",
                     ),
-
-                    # SECTION 4: Services
-                    section(
-                        "Services",
-                        [
-                            html.Div(
-                                [
-                                    html.Label("Enabled Services", style=LABEL_STYLE),
-                                    dcc.Checklist(
-                                        id="svc-enabled",
-                                        options=[
-                                            {"label": "Auth", "value": "auth"},
-                                            {"label": "API", "value": "api"},
-                                            {"label": "Worker", "value": "worker"},
-                                            {"label": "Scheduler", "value": "scheduler"},
-                                        ],
-                                        value=["auth", "api"],
-                                        inline=True,
-                                    ),
-                                ],
-                                style=ROW_STYLE,
-                            ),
-                            html.Div(
-                                [
-                                    html.Label("Notes", style=LABEL_STYLE),
-                                    dcc.Textarea(
-                                        id="svc-notes",
-                                        placeholder="Operational notes, maintenance windows, throttling, etc.",
-                                        style={"width": "100%", "height": "80px"},
-                                    ),
-                                ],
-                                style=ROW_STYLE,
-                            ),
-                            html.Div(id="svc-output", style={"marginTop": "8px", "whiteSpace": "pre-wrap"}),
-                        ],
-                        section_id="section-services",
-                    ),
                 ],
                 style=GRID_STYLE,
             ),
-
-            # Keep your original placeholder if you still need it
-            html.Div(id="system_conectivity_example", style={"marginTop": "16px", "color": "#6a737d"}),
-        ],
-        style={"display": "flex", "flexDirection": "column", "gap": "16px"}
+        ]
     )
 
 def callback_system_conectivity(app):
@@ -216,49 +211,38 @@ def callback_system_conectivity(app):
         # If interval is disabled (div fallback), this will still run once with n=None
         return f"Updated: {n if n is not None else 0} ticks"
 
-    # Network test action
-    @app.callback(
-        Output("net-result", "children"),
-        Input("btn-test-net", "n_clicks"),
-        State("Drive_1_id", "value"),
-        State("net-port", "value"),
-        prevent_initial_call=True,
-    )
-    def run_network_test(n_clicks, endpoint, port):
-        if not endpoint or not port:
-            return "Please provide both endpoint and port."
-        # Dummy result – replace with your real check
-        ok = str(endpoint).startswith("http") and 1 <= int(port) <= 65535
-        return "Connectivity OK ✅" if ok else "Connectivity failed ❌"
 
-    # Database summary
     @app.callback(
-        Output("db-summary", "children"),
-        Input("db-host", "value"),
-        Input("db-name", "value"),
-        Input("db-mode", "value"),
+        Output({"type": "server-status", "id": MATCH}, "children"),
+        Output({"type": "server-card", "id": MATCH}, "style"),
+        Output({"type": "server-endpoint", "id": MATCH}, "children"),
+        Input("interval", "n_intervals"),
+        prevent_initial_call=False,
     )
-    def show_db_summary(host, name, mode):
-        if not host and not name:
-            return "Waiting for database details…"
-        mode_label = "Read-Only" if mode == "ro" else "Read/Write"
-        return f"DB: {host or '-'} / {name or '-'} | Mode: {mode_label}"
+    def update_server(match_n):
+        # The pattern-matching id is available in dash.callback_context (ctx)
+        # The `MATCH` id is resolved per component instance.
+        pm = ctx.outputs_list[0]["id"]  # {'type': 'server-status', 'id': 'drive-1'} for example
+        server_id = pm["id"]
+        # change card color based on status
+        base = CARD_STYLE.copy()
 
-    # Services echo
-    @app.callback(
-        Output("svc-output", "children"),
-        Input("svc-enabled", "value"),
-        Input("svc-notes", "value"),
-    )
-    def show_services(enabled, notes):
-        enabled = enabled or []
-        notes = notes or ""
-        return f"Enabled: {', '.join(enabled) if enabled else 'None'}\nNotes: {notes}"
+        server_instance = backend_engine.get_server(server_id)
+        if server_instance is not None:
+            endpoint_ip = server_instance.get_connection_status().ip
+        else:
+            endpoint_ip = ""
+            txt = f"Offline"
+            return txt, base, endpoint_ip
+        
+        
+        if server_instance.client.get_connection_status().connected:
+            print("connecterd")
+            txt = f"Online"
+            base["background"] = "#e0ffc3"
+        else:
+            print("disconected")
+            txt = f"Offline"
+            base["background"] = "#fcadad"
 
-    # Keep your original example output, wired to the (optional) interval
-    @app.callback(
-        Output('system_conectivity_example', 'children'),
-        Input('interval', 'n_intervals')
-    )
-    def update_system_conectivity(n_intervals):
-        return 'system_conectivity template'
+        return txt, base, endpoint_ip
