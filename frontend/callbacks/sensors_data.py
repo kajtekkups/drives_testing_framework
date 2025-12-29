@@ -9,48 +9,90 @@ elif sys.platform.startswith('linux'):
 else:
     print("Unsupported OS")
 
-# Store live data
-TEMPERATURE_SENSORS_NUMBER = len(SensorID)
-plot_data = {f"plot{i}": {"x": [], "y": []} for i in range(TEMPERATURE_SENSORS_NUMBER)}
 from dash import Input, Output, html, dcc
 
+SECTION_STYLE = {
+    "border": "1px solid #e1e4e8",
+    "borderRadius": "8px",
+    "padding": "16px",
+    "background": "#f2f1f1",
+    "boxShadow": "0 1px 2px rgba(0,0,0,0.05)",
+    'marginTop': '20px'
+}
+
+def section(title, children, section_id=None):
+    """Small helper to render a consistent card-like section."""
+    return html.Div(
+        [
+            html.H4(title, style={"marginTop": 0, "marginBottom": "12px"}),
+            html.Div(children)
+        ],
+        id=section_id,
+        style=SECTION_STYLE
+    )
+    
+# Store live data
+TEMPERATURE_SENSORS_NUMBER = len(SensorID)
+PLOT_NAME = "sensor_plot_"
+
 def generate_sensors_data():
-    return html.Div([
-                html.H3("Live Plots 5–8"),
-                html.Div([
-                    html.Div(dcc.Graph(id=f'plot{i}'), style={'width': '25%', 'display': 'inline-block'})
-                    for i in range(TEMPERATURE_SENSORS_NUMBER)                    
-                ])
-            ])
+    return html.Div(
+        [
+            html.Div(
+                section(
+                    title=f"Sensor {i + 1}",
+                    children=dcc.Graph(id=f"{PLOT_NAME}{i}"),
+                    section_id=f"sensor-section-{i}",
+                ),
+                style={
+                    "width": "25%",
+                    "display": "inline-block",
+                    "verticalAlign": "top",
+                },
+            )
+            for i in range(TEMPERATURE_SENSORS_NUMBER)
+        ]
+    )
 
 def callback_sensors_data(app):
     @app.callback(
-        [Output(f'plot{i}', 'figure') for i in range(TEMPERATURE_SENSORS_NUMBER)],
+        [Output(f'{PLOT_NAME}{i}', 'figure') for i in range(TEMPERATURE_SENSORS_NUMBER)],
         Input('interval', 'n_intervals')
     )
     def update_sensors_data(n_intervals):
         figures = []
         measurements = backend_engine.get_measurements()
-        time = backend_engine.get_time()
-        keys = list(measurements.keys())
+        time = measurements.meassurement_time
+
+        if not measurements.sensors_meassurement:
+            for plot_index in range(TEMPERATURE_SENSORS_NUMBER):
+                figures.append({
+                    'data': [{
+                        'x': [],
+                        'y': [],
+                        'type': 'scatter',
+                        'mode': 'lines+markers'
+                    }],
+                    'layout': {'title': f'{PLOT_NAME} {plot_index}'}
+                })
+            return figures
+
+        keys = list(measurements.sensors_meassurement.keys())
 
         print(measurements)
         print(time)
-        # Plot T5–T8 → plot5–plot8
+
         for plot_index, key_index in enumerate(range(TEMPERATURE_SENSORS_NUMBER)):
             key = keys[key_index]
-            
-            plot_data[f'plot{plot_index}']['x'].append(time)
-            plot_data[f'plot{plot_index}']['y'].append(measurements[key])
 
             figures.append({
                 'data': [{
-                    'x': plot_data[f'plot{plot_index}']['x'],
-                    'y': plot_data[f'plot{plot_index}']['y'],
+                    'x': time,
+                    'y': measurements[key],
                     'type': 'scatter',
                     'mode': 'lines+markers'
                 }],
-                'layout': {'title': f'Plot {plot_index}'}
+                'layout': {'title': f'{PLOT_NAME} {plot_index}'}
             })
 
         return figures

@@ -3,9 +3,11 @@ import time
 from dataclasses import dataclass
 from common.data_classes import ServerId, SERVERS
 from common.server import ServerInstance
+import copy
 
 MEASUREMENT_TIME = 0.01  # seconds
-MAX_PLOT_MEASURMENTS = 100
+MAX_DRIVE_PLOT_MEASURMENTS = 100
+MAX_SENSOR_PLOT_MEASURMENTS = 100
 
 ERROR_DETECTED = 666
 STATUS_OK = 7
@@ -22,6 +24,11 @@ class TorquePlot:
     torque:  list[int] #TODO: make sure it's int not float
 
 @dataclass
+class SensorMeasurementPlot:
+    meassurement_time: list[int] = None #TODO: make sure it's int not float
+    sensors_meassurement:  dict[int, list[float]] = None
+
+@dataclass
 class TestMap:
     timestamp: list[int] #TODO: make sure it's int not float
     setpoint:  list[int] #TODO: make sure it's int not float
@@ -35,8 +42,7 @@ class SystemEngine:
         self.server_connections = server_connections
 
         self.sensor_reader = sensor_reader
-
-        self.meassurements = self.sensor_reader._sensors
+  
         self.velocity_setpoint = 0
         self.meassurement_time = 0
         
@@ -54,6 +60,8 @@ class SystemEngine:
                                 ServerId.motor_drive: TorquePlot(meassurement_time=[], torque=[]),
                                 ServerId.load_drive: TorquePlot(meassurement_time=[], torque=[])
         }
+
+        self.sensor_meassurement_plots = SensorMeasurementPlot()
 
         self.MAP_CONTROL = 12
         self.SETPOINT_CONTROL = 73
@@ -86,7 +94,7 @@ class SystemEngine:
 
     def get_measurements(self): #TODO: consider switching to queue
         with self.lock:
-            return self.meassurements.copy()  # return a copy to avoid race conditions
+            return copy.deepcopy(self.sensor_meassurement_plots) #TODO: make sure we dont need a deep copy here, return a copy to avoid race conditions
     
     def get_motor_test_map(self, drive: ServerId):
         #TODO: add mutex
@@ -152,25 +160,46 @@ class SystemEngine:
     def test_running(self):
         return self.test_active
 
+    def update_meassurements_plot(self, meassurement_time, meassurements: dict[int, float]):
+        #TODO: add mutexes
+        if len(self.sensor_meassurement_plots.meassurement_time) > MAX_SENSOR_PLOT_MEASURMENTS: 
+            plot_data.meassurement_time.pop(0)
+
+        if self.sensor_meassurement_plots.meassurement_time is not None:
+            self.sensor_meassurement_plots.meassurement_time.append(meassurement_time)
+        else:
+            self.sensor_meassurement_plots.meassurement_time = [meassurement_time]
+
+        for sensor_id, meassurement_data in meassurements.items():
+            if len(self.sensor_meassurement_plots.meassurement_time) > MAX_SENSOR_PLOT_MEASURMENTS:
+                self.sensor_meassurement_plots.sensors_meassurement[sensor_id].pop(0)
+
+            if self.sensor_meassurement_plots.sensors_meassurement is not None:
+                self.sensor_meassurement_plots.sensors_meassurement[sensor_id].append(meassurement_data)
+            else: 
+                self.sensor_meassurement_plots.sensors_meassurement[sensor_id] = [meassurement_data]
+
     def update_velocity_plots(self, meassurement_time):
         for drive_type, plot_data in self.velocity_plots.items():
             velocity = self.server_connections[drive_type].get_speed() #TODO: make sure it doesnt block controller (mutex)
 
-            plot_data.rpm.append(velocity) #TODO: save time and velocity to one datastructure
-            plot_data.meassurement_time.append(meassurement_time)
-            if len(plot_data.meassurement_time) > MAX_PLOT_MEASURMENTS:
+            if len(plot_data.meassurement_time) > MAX_DRIVE_PLOT_MEASURMENTS:
                 plot_data.rpm.pop(0)
                 plot_data.meassurement_time.pop(0)
+
+            plot_data.rpm.append(velocity)
+            plot_data.meassurement_time.append(meassurement_time)
 
     def update_torque_plots(self, meassurement_time):
         for drive_type, plot_data in self.torque_plots.items():
             torque = self.server_connections[drive_type].get_torque() #TODO: make sure it doesnt block controller (mutex)
 
-            plot_data.torque.append(torque) #TODO: save time and velocity to one datastructure
-            plot_data.meassurement_time.append(meassurement_time)
-            if len(plot_data.meassurement_time) > MAX_PLOT_MEASURMENTS:
+            if len(plot_data.meassurement_time) > MAX_DRIVE_PLOT_MEASURMENTS:
                 plot_data.torque.pop(0)
                 plot_data.meassurement_time.pop(0)
+
+            plot_data.torque.append(torque)
+            plot_data.meassurement_time.append(meassurement_time)
 
     def run_motor_maps(self, current_time):
         # for drive in self.server_connections.keys():
@@ -192,7 +221,7 @@ class SystemEngine:
         meassurements, _ = self.sensor_reader.read_all()
 
         with self.lock: #TODO: chceck all the mutexes
-            self.meassurements = meassurements.copy() #TODO: make sure meassurements doesn't contain nested objects (this is shallow copy)
+            self.update_meassurements_plot(test_time, meassurements)
             
             self.update_velocity_plots(test_time)
             self.update_torque_plots(test_time)
