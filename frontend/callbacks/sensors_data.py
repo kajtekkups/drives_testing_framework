@@ -63,8 +63,9 @@ def callback_sensors_data(app):
         figures = []
         measurements = backend_engine.get_measurements()
         time = measurements.meassurement_time
+        sensors_data = measurements.sensors_meassurement
 
-        if not measurements.sensors_meassurement:
+        if not sensors_data:
             for plot_index in range(TEMPERATURE_SENSORS_NUMBER):
                 figures.append({
                     'data': [{
@@ -77,10 +78,7 @@ def callback_sensors_data(app):
                 })
             return figures
 
-        keys = list(measurements.sensors_meassurement.keys())
-
-        print(measurements)
-        print(time)
+        keys = list(sensors_data.keys())
 
         for plot_index, key_index in enumerate(range(TEMPERATURE_SENSORS_NUMBER)):
             key = keys[key_index]
@@ -88,7 +86,7 @@ def callback_sensors_data(app):
             figures.append({
                 'data': [{
                     'x': time,
-                    'y': measurements[key],
+                    'y': sensors_data[key],
                     'type': 'scatter',
                     'mode': 'lines+markers'
                 }],

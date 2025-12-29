@@ -237,11 +237,9 @@ def callback_system_conectivity(app):
         
         
         if server_instance.client.get_connection_status().connected:
-            print("connecterd")
             txt = f"Online"
             base["background"] = "#e0ffc3"
         else:
-            print("disconected")
             txt = f"Offline"
             base["background"] = "#fcadad"
 

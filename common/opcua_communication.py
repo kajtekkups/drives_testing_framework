@@ -61,9 +61,10 @@ class OpcuaCommunicationStub:
         self.client = Client(url)
         self.root = None
         self.connected = False
-
+        self.initial_connection = False
+    
     def get_connection_status(self) -> Connectionstatus:
-        return self.connected #TODO: make it work
+        return Connectionstatus(self.url, self.connected)
 
     def write_parameter_float(self, setpoint, node_id):
         pass
@@ -74,3 +75,4 @@ class OpcuaCommunicationStub:
     def connect(self):
         print("Connected to server")    
         self.connected = True
+        self.initial_connection = True

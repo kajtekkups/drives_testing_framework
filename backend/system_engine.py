@@ -6,8 +6,8 @@ from common.server import ServerInstance
 import copy
 
 MEASUREMENT_TIME = 0.01  # seconds
-MAX_DRIVE_PLOT_MEASURMENTS = 100
-MAX_SENSOR_PLOT_MEASURMENTS = 100
+MAX_DRIVE_PLOT_MEASURMENTS = 50
+MAX_SENSOR_PLOT_MEASURMENTS = 50
 
 ERROR_DETECTED = 666
 STATUS_OK = 7
@@ -25,7 +25,7 @@ class TorquePlot:
 
 @dataclass
 class SensorMeasurementPlot:
-    meassurement_time: list[int] = None #TODO: make sure it's int not float
+    meassurement_time: list[float] = None #TODO: make sure it's int not float
     sensors_meassurement:  dict[int, list[float]] = None
 
 @dataclass
@@ -162,22 +162,23 @@ class SystemEngine:
 
     def update_meassurements_plot(self, meassurement_time, meassurements: dict[int, float]):
         #TODO: add mutexes
-        if len(self.sensor_meassurement_plots.meassurement_time) > MAX_SENSOR_PLOT_MEASURMENTS: 
-            plot_data.meassurement_time.pop(0)
 
-        if self.sensor_meassurement_plots.meassurement_time is not None:
-            self.sensor_meassurement_plots.meassurement_time.append(meassurement_time)
-        else:
-            self.sensor_meassurement_plots.meassurement_time = [meassurement_time]
+        if self.sensor_meassurement_plots.meassurement_time is None:
+            self.sensor_meassurement_plots.meassurement_time = []
+        if self.sensor_meassurement_plots.sensors_meassurement is None:
+            self.sensor_meassurement_plots.sensors_meassurement = {}
+
+        self.sensor_meassurement_plots.meassurement_time.append(meassurement_time)        
+            
+        if len(self.sensor_meassurement_plots.meassurement_time) > MAX_SENSOR_PLOT_MEASURMENTS: 
+            self.sensor_meassurement_plots.meassurement_time = self.sensor_meassurement_plots.meassurement_time[-MAX_SENSOR_PLOT_MEASURMENTS:]
 
         for sensor_id, meassurement_data in meassurements.items():
-            if len(self.sensor_meassurement_plots.meassurement_time) > MAX_SENSOR_PLOT_MEASURMENTS:
-                self.sensor_meassurement_plots.sensors_meassurement[sensor_id].pop(0)
+            series = self.sensor_meassurement_plots.sensors_meassurement.setdefault(sensor_id, [])
+            series.append(meassurement_data)                     
 
-            if self.sensor_meassurement_plots.sensors_meassurement is not None:
-                self.sensor_meassurement_plots.sensors_meassurement[sensor_id].append(meassurement_data)
-            else: 
-                self.sensor_meassurement_plots.sensors_meassurement[sensor_id] = [meassurement_data]
+            if len(series) > MAX_SENSOR_PLOT_MEASURMENTS:
+                self.sensor_meassurement_plots.sensors_meassurement[sensor_id] = series[-MAX_SENSOR_PLOT_MEASURMENTS:]
 
     def update_velocity_plots(self, meassurement_time):
         for drive_type, plot_data in self.velocity_plots.items():
@@ -221,7 +222,7 @@ class SystemEngine:
         meassurements, _ = self.sensor_reader.read_all()
 
         with self.lock: #TODO: chceck all the mutexes
-            self.update_meassurements_plot(test_time, meassurements)
+            self.update_meassurements_plot(test_time, meassurements) #TODO:make sure those plots arent updated to often
             
             self.update_velocity_plots(test_time)
             self.update_torque_plots(test_time)
@@ -263,7 +264,7 @@ class SystemEngine:
 
             self.motor_data_processing(current_time)
             
-            self.run_motor_maps(current_time)   
+            self.run_motor_maps(current_time)   #TODO: make sure the setpoint isnt set to often
 
             time.sleep(MEASUREMENT_TIME)
 
