@@ -24,7 +24,7 @@ class CSVStorage(StorageBackend):
         self.storage = storage
         self.externa_storage = False
         self.file_path = file_path
-        self.filename = None
+        self.filename = self.create_filename()
         self.fieldnames = None  # dynamically set on first log
 
     def new_session(self):
@@ -65,6 +65,9 @@ class DataLogger:
     def new_session(self):
         self.storage.new_session()
 
+    def external_storage_connected(self):
+        return self.storage.externa_storage
+    
     def log(self, measurement: dict):
         """Add timestamp and save/send measurement"""
         measurement_with_time = {"timestamp": datetime.now(timezone.utc).isoformat(), **measurement}

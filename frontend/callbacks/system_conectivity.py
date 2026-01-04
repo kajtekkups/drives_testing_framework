@@ -30,25 +30,34 @@ GRID_STYLE = {
     "gap": "16px",
 }
 
-#TODO: connect it to real sensors, change name to external sensors, because drives are hadled seperatly
-AVAILABLE_SENSORS = [
-    {"id": "temp-1", "name": "Temp sensor 1"},
-    {"id": "temp-2", "name": "Temp sensor 2"},
-    {"id": "temp-3", "name": "Temp sensor 3"},
-    {"id": "temp-4", "name": "Temp sensor 4"},
-    {"id": "temp-5", "name": "Temp sensor 5"},
-    {"id": "temp-6", "name": "Temp sensor 6"},
-    {"id": "temp-7", "name": "Temp sensor 7"},
-
-    {"id": "drive_1", "name": "Drive 1 sensors"},
-    {"id": "drive_2", "name": "Drive 2 sensors"},
-]
-
-
 LABEL_STYLE = {"display": "block", "fontWeight": "600", "marginBottom": "6px"}
 ROW_STYLE = {"marginBottom": "12px"}
 
+NOT_CONNECTED_STYLE ={
+                    "marginTop": "8px",
+                    "display": "inline-block",
+                    "padding": "6px 12px",
+                    "borderRadius": "12px",
+                    "fontWeight": "600",
+                    "fontSize": "14px",
+                    "color": "#721c24",
+                    "backgroundColor": "#f8d7da",
+                    "border": "1px solid #f5c6cb",
+                    "textAlign": "center",
+                }
 
+CONNECTED_STYLE = {
+                    "marginTop": "8px",
+                    "display": "inline-block",
+                    "padding": "6px 12px",
+                    "borderRadius": "12px",
+                    "fontWeight": "600",
+                    "fontSize": "14px",
+                    "color": "#155724",
+                    "backgroundColor": "#d4edda",
+                    "border": "1px solid #c3e6cb",
+                    "textAlign": "center",
+                }
 
 # (Optional) Minimal style defaults — remove if you already define these elsewhere
 CARD_STYLE = {
@@ -140,14 +149,15 @@ def generate_system_conectivity(use_interval=False):
                         [
                             html.Div(
                                 [
-                                    html.Label("Status", style=LABEL_STYLE),
-                                    
-                                    dcc.Checklist(
-                                        id="sensor-checklist",
-                                        options=[{"label": s["name"], "value": s["id"]} for s in AVAILABLE_SENSORS],
-                                        value=[],
-                                        inline=False
-                                    )
+                                    html.Div(
+                                        id="sensor-status-panel",
+                                        style={
+                                            "marginTop": "8px",
+                                            "display": "flex",
+                                            "flexDirection": "column",
+                                            "gap": "6px",
+                                        },
+                                    ),
                                 ],
                                 style=ROW_STYLE,
                             ),
@@ -186,11 +196,12 @@ def generate_system_conectivity(use_interval=False):
                         [
                             html.Div(
                                 [
-                                    html.Label("USB drive", style=LABEL_STYLE),
+                                    html.Div(
+                                        id="usb-status"
+                                    ),
                                 ],
-                                style=ROW_STYLE,                            
-                            ),
-                            html.Div(id="db-summary", style={"marginTop": "8px"}),
+                                style=ROW_STYLE,
+                            )
                         ],
                         section_id="section-database",
                     ),
@@ -204,12 +215,56 @@ def callback_system_conectivity(app):
     # Overview last update (ticks with global interval if present)
     @app.callback(
         Output("overview-last-update", "children"),
+        Output("usb-status", "children"),
+        Output("usb-status", "style"),
+        Output("sensor-status-panel", "children"),
         Input("interval", "n_intervals"),
         prevent_initial_call=False,
     )
     def update_overview_last_update(n):
         # If interval is disabled (div fallback), this will still run once with n=None
-        return f"Updated: {n if n is not None else 0} ticks"
+        ticks = f"Updated: {n if n is not None else 0} ticks"
+
+        #Sensor status:
+        rows = []
+
+        sensors_status = backend_engine.get_sensors_status()
+        for sensor_name, sensor_status in sensors_status.items():
+
+            if sensor_status:
+                badge_style = CONNECTED_STYLE
+            else:
+                badge_style = NOT_CONNECTED_STYLE
+
+            rows.append(
+                html.Div(
+                    [
+                        html.Div(sensor_name, style={"flex": "1"}),
+                        html.Div(
+                            "OK" if sensor_status else "Offline",
+                            style=badge_style,
+                        ),
+                    ],
+                    style={
+                        "display": "flex",
+                        "alignItems": "center",
+                        "justifyContent": "space-between",
+                        "gap": "12px",
+                    },
+                )
+            )
+
+        #USB status:
+        usb_connected = backend_engine.external_storage_status()
+        if usb_connected:
+            usb_status_info = "USB Connected"
+            usb_status_style = CONNECTED_STYLE
+
+        else:
+            usb_status_info = "USB Not connected"
+            usb_status_style = NOT_CONNECTED_STYLE
+
+        return ticks, usb_status_info, usb_status_style, rows
 
 
     @app.callback(

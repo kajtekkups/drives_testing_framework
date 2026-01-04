@@ -257,12 +257,18 @@ class SystemEngine:
             ServerId.load_drive: TorquePlot(meassurement_time=[], torque=[])
         }
 
+    def external_storage_status(self):
+        return self.data_logger.external_storage_connected()
+
+    def get_sensors_status(self):
+        return self.sensor_reader.get_sensors_status()
+
     def motor_map(self):
         self.map_test_startup_time = time.time()
         self.reset_velocity_plots()
         self.reset_torque_plots()
         self.data_logger.new_session()
-        
+
         while self.server_connections[ServerId.motor_drive].running():
             current_time = time.time() - self.map_test_startup_time
             
