@@ -228,8 +228,17 @@ class SystemEngine:
             self.update_torque_plots(test_time)
             
         #TODO: add torque, speed etc to meassuremets
+        #TODO: check if meassurement time is not to long, if it is, maybe abort the process?
+        meassurements["speed"] = self.velocity_plots[ServerId.motor_drive].rpm[-1]
+        meassurements["torque"] = self.torque_plots[ServerId.motor_drive].torque[-1]
+        meassurements["output_power"] = 0
+        meassurements["internal_ambient_temperature"] = 0 #01.31
+        #5.111
+        #35.05
+
+
         self.data_logger.log(meassurements)
-        
+
         if self.monitor_meassurements():
             self.server_connections[ServerId.motor_drive].reset()
             #TODO: disable testing
@@ -252,7 +261,8 @@ class SystemEngine:
         self.map_test_startup_time = time.time()
         self.reset_velocity_plots()
         self.reset_torque_plots()
-
+        self.data_logger.new_session()
+        
         while self.server_connections[ServerId.motor_drive].running():
             current_time = time.time() - self.map_test_startup_time
             

@@ -23,7 +23,7 @@ class TempReader:
     def read_all(self) -> Tuple[Dict[SensorID, float], float]:
         for sensor in self._sensors:
             self._sensors[sensor] = self._read_sensor(sensor.value)
-        return self._sensors, time.time()
+        return self._sensors, time.time() #TODO: return a deep copy
         
     def _read_sensor(self, sensor: int) -> float:                       
         return librtd.get(self._board_id, sensor)

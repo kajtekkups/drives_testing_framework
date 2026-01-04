@@ -20,16 +20,30 @@ class MqttPublisher(ABC):
         pass
 
 class CSVStorage(StorageBackend):
-    def __init__(self, file_dir: str):
-        self.filename = self.create_filename(file_dir)
+    def __init__(self, file_path: str, storage:str):
+        self.storage = storage
+        self.externa_storage = False
+        self.file_path = file_path
+        self.filename = None
         self.fieldnames = None  # dynamically set on first log
 
-    def create_filename(self, file_dir: str) -> str:
+    def new_session(self):
+        self.filename = self.create_filename()
+
+    def create_filename(self) -> str:
+        # Ensure USB is still plugged in
+        if os.path.exists(self.storage):
+            file_path = self.storage + self.file_path
+            self.externa_storage = True
+        else:
+            file_path = "./" + self.file_path
+            self.externa_storage = False
+
         # Ensure directory exists
-        os.makedirs(file_dir, exist_ok=True)
+        os.makedirs(file_path, exist_ok=True)
 
         timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
-        return f"{file_dir}data_log_{timestamp}.csv"
+        return f"{file_path}data_log_{timestamp}.csv"
         
     def save(self, data: dict):
         if self.fieldnames is None:
@@ -47,6 +61,9 @@ class DataLogger:
     def __init__(self, storage: StorageBackend, publisher: MqttPublisher = None):
         self.storage = storage
         self.publisher = publisher
+
+    def new_session(self):
+        self.storage.new_session()
 
     def log(self, measurement: dict):
         """Add timestamp and save/send measurement"""
