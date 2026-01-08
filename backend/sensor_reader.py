@@ -4,6 +4,7 @@ import librtd
 from typing import Dict, Tuple, List
 import time
 from enum import Enum
+import copy
 
 class SensorID(Enum):
     SENSOR_1 = 1
@@ -26,7 +27,7 @@ class TempReader:
     def read_all(self) -> Tuple[Dict[SensorID, float], float]:
         for sensor in self._sensors:
             self._sensors[sensor] = self._read_sensor(sensor.value)
-        return self._sensors, time.time() #TODO: return a deep copy
+        return copy.deepcopy(self._sensors), time.time() #TODO: return a deep copy
     
     def get_sensors_status(self) -> Dict[str, bool]:
         status_list: Dict[str, bool] = {}

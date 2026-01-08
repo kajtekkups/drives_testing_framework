@@ -7,7 +7,7 @@ import copy
 
 MEASUREMENT_TIME = 0.01  # seconds
 MAX_DRIVE_PLOT_MEASURMENTS = 50
-MAX_SENSOR_PLOT_MEASURMENTS = 150
+MAX_SENSOR_PLOT_MEASURMENTS = 400
 
 ERROR_DETECTED = 666
 STATUS_OK = 7
@@ -257,6 +257,9 @@ class SystemEngine:
             ServerId.load_drive: TorquePlot(meassurement_time=[], torque=[])
         }
 
+    def reset_measasurements_plot(self):
+        self.sensor_meassurement_plots = SensorMeasurementPlot()
+
     def external_storage_status(self):
         return self.data_logger.external_storage_connected()
 
@@ -267,6 +270,7 @@ class SystemEngine:
         self.map_test_startup_time = time.time()
         self.reset_velocity_plots()
         self.reset_torque_plots()
+        self.reset_measasurements_plot()
         self.data_logger.new_session()
 
         while self.server_connections[ServerId.motor_drive].running():
